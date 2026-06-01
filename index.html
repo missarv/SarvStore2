@@ -593,9 +593,10 @@
 
         .inv-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
         .inv-table th {
-            background: #0f172a !important; color: #fff !important;
-            padding: 8px 10px; font-size: 11px; font-weight: 700;
-            border: 1px solid #0f172a; text-transform: uppercase;
+            background: #ffffff !important; color: #0f172a !important;
+            padding: 8px 10px; font-size: 11px; font-weight: 800;
+            border: 2px solid #0f172a !important; text-transform: uppercase;
+            -webkit-print-color-adjust: exact; print-color-adjust: exact;
         }
         .inv-table td { padding: 8px 10px; border: 1px solid #e2e8f0; font-size: 12px; }
 
@@ -870,7 +871,7 @@
             .landscape-pair-container .inv-meta-grid { gap: 10px !important; margin-bottom: 12px !important; }
             .landscape-pair-container .meta-block td { font-size: 10px !important; padding: 2px 0 !important; }
             .landscape-pair-container .inv-table { margin-bottom: 12px !important; }
-            .landscape-pair-container .inv-table th { font-size: 9px !important; padding: 5px 6px !important; }
+            .landscape-pair-container .inv-table th { font-size: 9px !important; padding: 5px 6px !important; background:#ffffff !important; color:#0f172a !important; border:2px solid #0f172a !important; font-weight:800 !important; }
             .landscape-pair-container .inv-table td { font-size: 10px !important; padding: 5px 6px !important; }
             .landscape-pair-container .inv-flex-summary-container { gap: 10px !important; margin-top: 10px !important; }
             .landscape-pair-container .inv-print-freight-box { width: 48% !important; padding: 6px 8px !important; }
@@ -1284,6 +1285,10 @@
                     <div class="form-group">
                         <label>LOT No.</label>
                         <input type="text" class="form-control" id="lotNo" placeholder="Lot / Batch No." list="dl-lotNo" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label>Machine Name</label>
+                        <input type="text" class="form-control" id="inwMachineName" placeholder="Machine / Line No." list="dl-inw-machine-name" autocomplete="off">
                     </div>
                 </div>
 
@@ -2056,6 +2061,7 @@
     <datalist id="dl-master-uom"></datalist>
     <!-- Gate Pass + Lot No (autocomplete from previous entries) -->
     <datalist id="dl-gatePassNo"></datalist>
+    <datalist id="dl-inw-machine-name"></datalist>
     <datalist id="dl-lotNo"></datalist>
 
     <!-- ═══ v8: PREVIEW MODAL ═══ -->
@@ -2149,7 +2155,7 @@
         // =====================================================================
         // CLOUD SYNC CONFIG  --  paste your deployed Apps Script Web App URL
         // =====================================================================
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyNq8c4bRxcPmQgyUBYKadM9RqJhVg5FinqlG7Y-1Z4M8AVNdcV1Lz2059r-eno2mOx/exec";
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxETTKi7HTCQVeu0cShg-eKCd1jZMvXa6Vm0JKw2UM67E7WFvx13jukUT8nOojL3VBA/exec";
         // =====================================================================
 
         // Two independent counters — one per Entry Type
@@ -2726,6 +2732,7 @@
                 supplier:      (document.getElementById('supplierName').value || '').trim(),
                 gatePass:      (document.getElementById('gatePassNo').value || '').trim(),
                 lotNo:         (document.getElementById('lotNo').value || '').trim(),
+                machineName:   (document.getElementById('inwMachineName').value || '').trim(),
                 state:         document.getElementById('partyState').value,
                 poNum:         (document.getElementById('poNumber').value || '').trim(),
                 invoiceNum:    (document.getElementById('invoiceNumber').value || '').trim(),
@@ -2807,9 +2814,9 @@
 
             .inv-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
             .inv-table th {
-                background: #0f172a !important; color: #fff !important;
-                padding: 6px 5px; font-size: 10px; font-weight: 700;
-                border: 1px solid #0f172a; text-transform: uppercase;
+                background: #ffffff !important; color: #0f172a !important;
+                padding: 6px 5px; font-size: 10px; font-weight: 800;
+                border: 2px solid #0f172a !important; text-transform: uppercase;
                 -webkit-print-color-adjust: exact; print-color-adjust: exact;
             }
             .inv-table td { padding: 5px 6px; border: 1px solid #e2e8f0; font-size: 10px; }
@@ -2921,7 +2928,7 @@
             .single-wrap .meta-block td { font-size: 11px !important; padding: 2px 0 !important; }
             /* Items table — flexible, shrinks to fit */
             .single-wrap .inv-table { margin-bottom: 6px !important; flex-shrink: 1; overflow: hidden; }
-            .single-wrap .inv-table th { font-size: 10px !important; padding: 5px 5px !important; }
+            .single-wrap .inv-table th { font-size: 10px !important; padding: 5px 5px !important; background:#ffffff !important; color:#0f172a !important; border:2px solid #0f172a !important; font-weight:800 !important; }
             .single-wrap .inv-table td { font-size: 11px !important; padding: 4px 5px !important; }
             /* Summary pushed to bottom */
             .single-wrap .inv-flex-summary-container { margin-top: auto !important; gap: 10px !important; flex-shrink: 0; }
@@ -3098,7 +3105,7 @@
                     <div class="sheet-type-tag">${copyTitle}</div>
                     <div class="inv-header">
                         <h2>SIHF-II</h2>
-                        <p>${entryType} Slip &mdash; Industrial Plot Area, Panipat, Haryana</p>
+                        <p style="margin:4px 0 0;font-size:13px;font-weight:900;color:#dc2626;">${entryType}</p>
                     </div>
 
                     <div class="inv-meta-grid">
@@ -3106,8 +3113,8 @@
                             <table>
                                 <tr><td class="lbl">Outward No:</td><td><strong>${get('outRegEntryNo')}</strong></td></tr>
                                 <tr><td class="lbl">Date:</td><td>${formatInvoiceDate(get('outDate'))}</td></tr>
-                                <tr><td class="lbl">Entry Type:</td><td><span style="color:#0369a1;font-weight:700">${entryType}</span></td></tr>
                                 <tr><td class="lbl">Nature of Dispatch:</td><td>${get('outNatureOfDispatch')}</td></tr>
+                                ${get('outGatePassNo') ? `<tr><td class="lbl">Gate Pass:</td><td>${get('outGatePassNo')}</td></tr>` : ''}
                             </table>
                         </div>
                         <div class="meta-block">
@@ -3116,7 +3123,6 @@
                                 <tr><td class="lbl">Location:</td><td>${get('outLocation')}</td></tr>
                                 <tr><td class="lbl">Target Return:</td><td>${formatInvoiceDate(get('outTargetReturnDate'))}</td></tr>
                                 <tr><td class="lbl">Transport:</td><td>${get('outTransport')}</td></tr>
-                                ${get('outGatePassNo') ? `<tr><td class="lbl">Gate Pass:</td><td>${get('outGatePassNo')}</td></tr>` : ''}
                                 ${get('outLotNo') ? `<tr><td class="lbl">Lot No.:</td><td>${get('outLotNo')}</td></tr>` : ''}
                             </table>
                         </div>
@@ -3449,8 +3455,9 @@
             const inwardNo = document.getElementById('regEntryNo').value;
             const recDate = document.getElementById('receivingDate').value || '-';
             const poNum = document.getElementById('poNumber').value || '-';
-            const gatePass  = (document.getElementById('gatePassNo').value || '').trim();
-            const lotNumber = (document.getElementById('lotNo').value || '').trim();
+            const gatePass    = (document.getElementById('gatePassNo').value || '').trim();
+            const lotNumber   = (document.getElementById('lotNo').value || '').trim();
+            const machineName = (document.getElementById('inwMachineName').value || '').trim();
             const invNum = document.getElementById('invoiceNumber').value || '-';
             const invDate = formatInvoiceDate(document.getElementById('invoiceDate').value) || '-';
             const supplier = document.getElementById('supplierName').value || '-';
@@ -3545,7 +3552,7 @@
                     <div class="sheet-type-tag">${copyTitle}</div>
                     <div class="inv-header">
                         <h2>SIHF-II</h2>
-                        <p>Store Ledger Control Slip</p>
+                        <p style="margin:4px 0 0;font-size:13px;font-weight:900;color:${(entryTypeSelected==='INWARD NB')?'#15803d':(entryTypeSelected.indexOf('INWARD')!==-1?'#15803d':'#dc2626')};">${entryTypeSelected}</p>
                     </div>
 
                     <div class="inv-meta-grid">
@@ -3555,6 +3562,7 @@
                                 <tr><td class="lbl">Receiving Date:</td><td>${recDate}</td></tr>
                                 <tr><td class="lbl">Supplier Name:</td><td><strong>${supplier}</strong></td></tr>
                                 <tr><td class="lbl">Party State:</td><td>${state}</td></tr>
+                                ${machineName ? `<tr style="background:#dbeafe;"><td class="lbl" style="color:#1d4ed8;font-weight:700;">Machine:</td><td style="font-weight:700;color:#1e40af;">${machineName}</td></tr>` : ''}
                             </table>
                         </div>
                         <div class="meta-block">
@@ -3564,7 +3572,6 @@
                                 <tr><td class="lbl">PO Reference:</td><td>${poNum}</td></tr>
                                 ${gatePass ? `<tr><td class="lbl">Gate Pass:</td><td>${gatePass}</td></tr>` : ''}
                                 ${lotNumber ? `<tr><td class="lbl">Lot No.:</td><td>${lotNumber}</td></tr>` : ''}
-                                <tr><td class="lbl">Entry Type:</td><td><span style="color:#0369a1;font-weight:700">${entryTypeSelected} RECORD</span></td></tr>
                             </table>
                         </div>
                     </div>
@@ -4118,7 +4125,7 @@
 
         function resetInwardForm() {
             // Clear header text fields
-            ['poNumber','invoiceNumber','supplierName','inwRemarks','gatePassNo','lotNo'].forEach(id => {
+            ['poNumber','invoiceNumber','supplierName','inwRemarks','gatePassNo','lotNo','inwMachineName'].forEach(id => {
                 const el = document.getElementById(id); if (el) el.value = '';
             });
             // Reset dates to today
@@ -5311,8 +5318,9 @@
             'item-name':        'dl-item-name',
             'item-desc':        'dl-item-desc',
             'item-make':        'dl-item-make',
-            // Gate Pass + Lot No
+            // Gate Pass + Lot No + Machine Name
             'gatePassNo':       'dl-gatePassNo',
+            'inwMachineName':   'dl-inw-machine-name',
             'lotNo':            'dl-lotNo',
             // Outward header
             'outPartyName':     'dl-outPartyName',
@@ -5366,7 +5374,7 @@
         // Called after successful Inward save
         function acSaveInwardForm() {
             // Header fields (by ID)
-            ['supplierName', 'poNumber', 'invoiceNumber', 'gatePassNo', 'lotNo'].forEach(function(id) {
+            ['supplierName', 'poNumber', 'invoiceNumber', 'gatePassNo', 'lotNo', 'inwMachineName'].forEach(function(id) {
                 const el = document.getElementById(id);
                 if (el && el.value.trim()) acSave(id, el.value.trim());
             });
