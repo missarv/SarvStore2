@@ -2318,7 +2318,7 @@
             const taxRaw    = document.getElementById('totalTaxAmount').innerText || '0';
             const totalTax  = parseFloat(taxRaw.replace(/[^0-9.-]/g, '')) || 0;
             const supplier  = (document.getElementById('supplierName').value || '').trim().toUpperCase();
-            const isSihfI   = (supplier === 'SIHF-I');
+            const isSihfI   = (supplier === 'SARV INDIA HOME FURNISHING (UNIT-I)');
 
             if (entryType === 'INWARD' && totalTax === 0 && !isSihfI) {
                 // Show Edit Password gate
