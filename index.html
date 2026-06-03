@@ -1595,7 +1595,7 @@
                     <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
                         <input type="text" class="form-control" id="itemMasterSearch" placeholder="&#128269; Search items..." style="flex:1; height:30px; font-size:11px;" oninput="filterMasterTable('itemMasterSearch','itemMasterBody')">
                         <span id="itemMasterCount" style="font-size:11px; font-weight:700; color:#64748b;">0 items</span>
-                        <button class="btn" onclick="loadItemMaster()" style="background:#e0f2fe; color:#0369a1; font-size:10px; height:28px; padding:0 10px;">&#128260; Refresh</button>
+                        <button class="btn" onclick="loadItemMaster(true)" style="background:#e0f2fe; color:#0369a1; font-size:10px; height:28px; padding:0 10px;">&#128260; Refresh</button>
                     </div>
                     <div class="table-container" style="max-height:350px; overflow-y:auto;">
                         <table style="width:100%; border-collapse:collapse; font-size:11px;">
@@ -1645,7 +1645,7 @@
                     <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
                         <input type="text" class="form-control" id="supplierMasterSearch" placeholder="&#128269; Search suppliers..." style="flex:1; height:30px; font-size:11px;" oninput="filterMasterTable('supplierMasterSearch','supplierMasterBody')">
                         <span id="supplierMasterCount" style="font-size:11px; font-weight:700; color:#64748b;">0 suppliers</span>
-                        <button class="btn" onclick="loadSupplierMaster()" style="background:#dcfce7; color:#166534; font-size:10px; height:28px; padding:0 10px;">&#128260; Refresh</button>
+                        <button class="btn" onclick="loadSupplierMaster(true)" style="background:#dcfce7; color:#166534; font-size:10px; height:28px; padding:0 10px;">&#128260; Refresh</button>
                     </div>
                     <div class="table-container" style="max-height:350px; overflow-y:auto;">
                         <table style="width:100%; border-collapse:collapse; font-size:11px;">
@@ -2155,7 +2155,9 @@
         // =====================================================================
         // CLOUD SYNC CONFIG  --  paste your deployed Apps Script Web App URL
         // =====================================================================
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxETTKi7HTCQVeu0cShg-eKCd1jZMvXa6Vm0JKw2UM67E7WFvx13jukUT8nOojL3VBA/exec";
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzHVKX1lmjv7_9qTNMvqeZ_0fot3JguU4AtFGMCwYnT8jB1Qg-2tmnldCRn4Y4Z3yTM/exec";
+        const APP_VERSION     = "6.1";           // v6.1 — stamped on every payload
+        const MAX_ITEMS_PER_ENTRY = 50;          // mirror of backend cap
         // =====================================================================
 
         // Two independent counters — one per Entry Type
@@ -2272,7 +2274,35 @@
         document.getElementById('calcGrossWeight').addEventListener('input', calculateFreightData);
         document.getElementById('calcFreightRate').addEventListener('input', calculateFreightData);
 
+        // v6.1: Submit-button guard prevents double-click → double-save race.
+        // The guard auto-releases after 3s if the user cancels at the PIN modal,
+        // and is also released by the final flow (success, error, or close).
+        function lockSubmitBtn(id, label) {
+            const btn = document.getElementById(id);
+            if (!btn) return null;
+            btn.disabled = true;
+            btn.dataset.origText = btn.innerText;
+            btn.innerText = label || 'Working…';
+            btn.style.opacity = '0.65';
+            return btn;
+        }
+        function unlockSubmitBtn(id) {
+            const btn = document.getElementById(id);
+            if (!btn) return;
+            btn.disabled = false;
+            if (btn.dataset.origText) btn.innerText = btn.dataset.origText;
+            btn.style.opacity = '1';
+        }
+        // Make these globally reachable for the save handlers
+        window.lockSubmitBtn   = lockSubmitBtn;
+        window.unlockSubmitBtn = unlockSubmitBtn;
+
         document.getElementById('submitBtn').addEventListener('click', function() {
+            // v6.1: guard against double-clicks. Auto-release after 90s safety window.
+            if (this.disabled) return;
+            lockSubmitBtn('submitBtn', 'Verifying…');
+            setTimeout(function(){ unlockSubmitBtn('submitBtn'); }, 90000);
+
             CURRENT_SUBMIT_CONTEXT = "INWARD";
 
             // ── GST = 0 check: require Edit Password authorization ──
@@ -2280,9 +2310,17 @@
             const taxRaw    = document.getElementById('totalTaxAmount').innerText || '0';
             const totalTax  = parseFloat(taxRaw.replace(/[^0-9.-]/g, '')) || 0;
 
-            // GST=0 check: ONLY for INWARD (not INWARD NB — exempt by design)
-            if (entryType === 'INWARD' && totalTax === 0) {
+            if ((entryType === 'INWARD' || entryType === 'INWARD NB') && totalTax === 0) {
+                // Show Edit Password gate
                 openGstZeroAuthModal();
+                return;
+            }
+
+            // v6.1: item-count cap (mirror of backend)
+            const rowCount = document.querySelectorAll('#itemTableBody tr').length;
+            if (rowCount > MAX_ITEMS_PER_ENTRY) {
+                showToast('&#9888; Too many items (' + rowCount + '). Max allowed: ' + MAX_ITEMS_PER_ENTRY + '. Split into multiple entries.', 'error', 8000);
+                unlockSubmitBtn('submitBtn');
                 return;
             }
 
@@ -2443,6 +2481,9 @@
             document.getElementById('secureSignatureModal').style.display = "none";
             document.getElementById('pinErrorMsg').style.display = "none";
             document.getElementById('signaturePinInput').value  = "";
+            // v6.1: user backed out — release whichever Submit lock was set
+            unlockSubmitBtn('submitBtn');
+            unlockSubmitBtn('outSubmitBtn');
         });
 
         document.getElementById('verifySigBtn').addEventListener('click', async function() {
@@ -2650,16 +2691,7 @@
                 const result = await syncToCloud(payload);
                 hideSyncOverlay();
 
-                if (result.status === 'DUPLICATE') {
-                    IS_DIGITALLY_SIGNED = false;
-                    let linkHtml = "";
-                    if (result.existingLink) {
-                        linkHtml = ' <a href="' + result.existingLink + '" target="_blank">View existing PDF &#8599;</a>';
-                    }
-                    showToast('&#9888; Duplicate blocked: ' + result.message + linkHtml, 'warn', 12000);
-                    saveBtn.disabled = false; saveBtn.style.opacity = '1';
-                    return;
-                }
+                // v6.1: DUPLICATE handling removed (server no longer blocks duplicates).
 
                 if (result.status === 'ERROR') {
                     IS_DIGITALLY_SIGNED = false;
@@ -2692,6 +2724,8 @@
             } finally {
                 saveBtn.disabled = false;
                 saveBtn.style.opacity = '1';
+                // v6.1: release the Submit-Inward lock whichever way we exit
+                unlockSubmitBtn('submitBtn');
             }
         });
 
@@ -2712,11 +2746,36 @@
                     listPrice:   parseFloat(row.querySelector('.list-price-field').value) || 0,
                     discountPct: parseFloat(row.querySelector('.discount-field').value) || 0,
                     rate:        parseFloat(row.querySelector('.rate-field').value) || 0,
-                    total:       row.querySelector('.row-total-cell').innerText
+                    // v6.1: prefer a numeric data-attribute if the row writer set one;
+                    //       fall back to scraping innerText for backward compat.
+                    total:       (function() {
+                        const el = row.querySelector('.row-total-cell');
+                        if (!el) return 0;
+                        if (el.dataset && el.dataset.value !== undefined) return parseFloat(el.dataset.value) || 0;
+                        return parseFloat(String(el.innerText || '').replace(/[^0-9.\-]+/g, '')) || 0;
+                    })()
                 });
             });
 
-            const num = s => parseFloat(String(s).replace(/[^0-9.\-]+/g, "")) || 0;
+            // v6.1: numeric reader — accepts (a) raw display string ('₹1,234.56'),
+            //                     (b) a DOM element, or (c) an element ID. In (b)/(c)
+            //                     prefers .dataset.value to avoid locale-format issues.
+            const num = function(x) {
+                if (x === null || x === undefined) return 0;
+                let el = null;
+                if (typeof x === 'string') {
+                    el = document.getElementById(x);
+                    if (!el) {
+                        // raw string — strip formatting
+                        return parseFloat(x.replace(/[^0-9.\-]+/g, '')) || 0;
+                    }
+                } else {
+                    el = x;
+                }
+                if (el && el.dataset && el.dataset.value !== undefined) return parseFloat(el.dataset.value) || 0;
+                const raw = String((el && (el.innerText || el.value)) || '').replace(/[^0-9.\-]+/g, '');
+                return parseFloat(raw) || 0;
+            };
             const pdfHtmlSingle  = buildLandscapePdfHtml();
             const pdfHtmlTwoPage = buildBothCopiesPortraitDoc(
                 generateInvoiceHTML('ACCOUNT COPY'),
@@ -2754,6 +2813,7 @@
                 costOnYarn:    document.getElementById('calcCostOnYarn').value,
                 remarks:       (document.getElementById('inwRemarks').value || '').trim(),
                 signedAt:      SIGNATURE_TIMESTAMP,
+                signatureImage: SIGNATURE_IMAGE_DATA || "",   // v6.1: server uploads as PNG
                 pdfHtml:        pdfHtmlSingle,    // legacy field — for backward compat
                 pdfHtmlSingle:  pdfHtmlSingle,
                 pdfHtmlTwoPage: pdfHtmlTwoPage
@@ -3033,9 +3093,10 @@
                 <div class="sig-line" style="border-top: 1px solid red; color:red;">PENDING SIGNATURE</div>
             `;
             if (IS_DIGITALLY_SIGNED && SIGNATURE_IMAGE_DATA) {
+                // v6.3.1: only the designation label is removed; timestamp stays.
                 digitalStampHtml = `
                     <div class="sig-image-wrap"><img src="${SIGNATURE_IMAGE_DATA}" alt="Signature"></div>
-                    <div class="sig-line">Store In-Charge</div>
+                    <div class="sig-line"></div>
                     <div class="sig-timestamp">${SIGNATURE_TIMESTAMP}</div>
                 `;
             }
@@ -3159,14 +3220,31 @@
             `;
         }
 
+        // v6.1: stamp every outgoing payload with version + clientId for audit traceability,
+        //       and retry transient HTTP failures once (exponential backoff: 1.5s).
         async function syncToCloud(payload) {
-            const res = await fetch(APPS_SCRIPT_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(payload),
-                redirect: 'follow'
-            });
-            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const body = JSON.stringify(Object.assign({}, payload || {}, {
+                v:        APP_VERSION,
+                clientId: getClientId()
+            }));
+            const send = async function() {
+                return fetch(APPS_SCRIPT_URL, {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // text/plain avoids CORS preflight
+                    body:    body,
+                    redirect:'follow'
+                });
+            };
+            let res;
+            try {
+                res = await send();
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+            } catch (firstErr) {
+                // single retry — most transient Apps Script blips clear within 1–2s
+                await new Promise(function(r){ setTimeout(r, 1500); });
+                res = await send();
+                if (!res.ok) throw new Error('HTTP ' + res.status + ' (after retry)');
+            }
             return await res.json();
         }
 
@@ -3540,9 +3618,10 @@
                 <div class="sig-line" style="border-top: 1px solid red; color:red;">PENDING SIGNATURE</div>
             `;
             if(IS_DIGITALLY_SIGNED && SIGNATURE_IMAGE_DATA) {
+                // v6.3.1: only the designation label is removed; timestamp stays.
                 digitalStampHtml = `
                     <div class="sig-image-wrap"><img src="${SIGNATURE_IMAGE_DATA}" alt="Signature"></div>
-                    <div class="sig-line">${_sigDesig}</div>
+                    <div class="sig-line"></div>
                     <div class="sig-timestamp">${SIGNATURE_TIMESTAMP}</div>
                 `;
             }
@@ -3562,7 +3641,7 @@
                                 <tr><td class="lbl">Receiving Date:</td><td>${recDate}</td></tr>
                                 <tr><td class="lbl">Supplier Name:</td><td><strong>${supplier}</strong></td></tr>
                                 <tr><td class="lbl">Party State:</td><td>${state}</td></tr>
-                                ${machineName ? `<tr style="background:#fcfcfc;"><td class="lbl" style="color:#00030a;font-weight:700;">Machine:</td><td style="font-weight:700;color:#00030a;">${machineName}</td></tr>` : ''}
+                                ${machineName ? `<tr style="background:#dbeafe;"><td class="lbl" style="color:#1d4ed8;font-weight:700;">Machine:</td><td style="font-weight:700;color:#1e40af;">${machineName}</td></tr>` : ''}
                             </table>
                         </div>
                         <div class="meta-block">
@@ -3953,16 +4032,23 @@
         document.getElementById('outDate').addEventListener('change', updateOutwardNoPreview);
 
         // ---------- OUTWARD SUBMIT ----------
-        document.getElementById('outSubmitBtn').addEventListener('click', () => {
+        document.getElementById('outSubmitBtn').addEventListener('click', function() {
+            // v6.1: guard against double-clicks
+            if (this.disabled) return;
+            lockSubmitBtn('outSubmitBtn', 'Verifying…');
+            setTimeout(function(){ unlockSubmitBtn('outSubmitBtn'); }, 90000);
+
             // basic validation — common fields
             const required = [
                 ['outPartyName',   'Party Name'],
                 ['outReceiverName','Receiver Name']
             ];
-            for (const [id, label] of required) {
+            for (const pair of required) {
+                const id = pair[0], label = pair[1];
                 if (!document.getElementById(id).value.toString().trim()) {
                     showToast('&#9888; ' + label + ' is required.', 'warn', 5000);
                     document.getElementById(id).focus();
+                    unlockSubmitBtn('outSubmitBtn');
                     return;
                 }
             }
@@ -3971,6 +4057,13 @@
             const rows = document.querySelectorAll('#outwardItemTableBody tr');
             if (rows.length === 0) {
                 showToast('&#9888; Add at least one item.', 'warn', 5000);
+                unlockSubmitBtn('outSubmitBtn');
+                return;
+            }
+            // v6.1: item-count cap (mirror of backend)
+            if (rows.length > MAX_ITEMS_PER_ENTRY) {
+                showToast('&#9888; Too many items (' + rows.length + '). Max: ' + MAX_ITEMS_PER_ENTRY + '. Split into multiple entries.', 'error', 8000);
+                unlockSubmitBtn('outSubmitBtn');
                 return;
             }
             let hasValidItem = false;
@@ -3982,12 +4075,8 @@
             }
             if (!hasValidItem) {
                 showToast('&#9888; At least one item must have Item Name, Description, and Qty &gt; 0.', 'warn', 6000);
+                unlockSubmitBtn('outSubmitBtn');
                 return;
-            }
-
-            // Warn if more than 1 item — outward sheet currently saves only the FIRST item
-            if (rows.length > 1) {
-                showToast('&#9888; Note: Outward sheet only stores the <b>first item</b>. Other ' + (rows.length - 1) + ' item(s) will appear in the PDF but NOT in the sheet.', 'warn', 8000);
             }
 
             CURRENT_SUBMIT_CONTEXT = "OUTWARD";
@@ -4072,15 +4161,7 @@
                 const result = await syncToCloud(payload);
                 hideSyncOverlay();
 
-                if (result.status === 'DUPLICATE') {
-                    IS_DIGITALLY_SIGNED = false;
-                    let linkHtml = "";
-                    if (result.existingLink) {
-                        linkHtml = ' <a href="' + result.existingLink + '" target="_blank">View existing PDF &#8599;</a>';
-                    }
-                    showToast('&#9888; Duplicate blocked: ' + result.message + linkHtml, 'warn', 12000);
-                    return;
-                }
+                // v6.1: DUPLICATE handling removed (server no longer blocks duplicates).
                 if (result.status === 'ERROR') {
                     IS_DIGITALLY_SIGNED = false;
                     showToast('&#10060; Save failed: ' + (result.message || 'Unknown'), 'error', 10000);
@@ -4110,6 +4191,9 @@
                 hideSyncOverlay();
                 IS_DIGITALLY_SIGNED = false;
                 showToast('&#10060; Network error: ' + err.message, 'error', 10000);
+            } finally {
+                // v6.1: release the Outward Submit lock on any exit path
+                unlockSubmitBtn('outSubmitBtn');
             }
         }
 
@@ -4190,24 +4274,30 @@
         // =====================================================================
 
         // ── Shared row builder for both search + loadAll ──
+        // v6.1: XSS-safe — record numbers/types ride on data-attrs (esc'd), and the
+        //       View/Edit buttons are wired up via event delegation in bindResultActions().
         function buildResultRows(results) {
             if (!results || results.length === 0) return '';
             return results.map(function(r) {
                 const isInward  = (r.type === 'INWARD');
                 const typeColor = isInward ? '#0284c7' : '#7c3aed';
-                const typeBadge = '<span style="background:' + typeColor + ';color:#fff;padding:2px 7px;border-radius:9px;font-size:9px;font-weight:700;">' + r.type + '</span>' +
-                    (r.entryType && r.entryType !== r.type ? '<br><span style="font-size:9px;color:#94a3b8;">' + r.entryType + '</span>' : '');
-                const amount   = (typeof r.amount === 'number' && r.amount > 0) ? formatter.format(r.amount) : (r.amount || '—');
+                const typeBadge = '<span style="background:' + typeColor + ';color:#fff;padding:2px 7px;border-radius:9px;font-size:9px;font-weight:700;">' + esc(r.type) + '</span>' +
+                    (r.entryType && r.entryType !== r.type ? '<br><span style="font-size:9px;color:#94a3b8;">' + esc(r.entryType) + '</span>' : '');
+                const amount   = (typeof r.amount === 'number' && r.amount > 0) ? formatter.format(r.amount) : esc(r.amount || '—');
+                const safePdf  = String(r.pdfLink  || '').replace(/"/g,'&quot;');
+                const safePdf2 = String(r.pdfLink2 || '').replace(/"/g,'&quot;');
                 const pdfBtn   = r.pdfLink
-                    ? '<a href="' + r.pdfLink + '" target="_blank" rel="noopener" class="btn btn-primary" style="height:24px;padding:2px 7px;font-size:9px;text-decoration:none;display:inline-flex;align-items:center;gap:2px;" title="Single Page PDF">&#128196; 1P</a>'
+                    ? '<a href="' + safePdf + '" target="_blank" rel="noopener" class="btn btn-primary" style="height:24px;padding:2px 7px;font-size:9px;text-decoration:none;display:inline-flex;align-items:center;gap:2px;" title="Single Page PDF">&#128196; 1P</a>'
                     : '';
                 const pdf2Btn  = r.pdfLink2
-                    ? '<a href="' + r.pdfLink2 + '" target="_blank" rel="noopener" class="btn" style="height:24px;padding:2px 7px;font-size:9px;text-decoration:none;display:inline-flex;align-items:center;gap:2px;background:#e0e7ff;color:#4338ca;border:1px solid #c7d2fe;" title="Two Page PDF">&#128203; 2P</a>'
+                    ? '<a href="' + safePdf2 + '" target="_blank" rel="noopener" class="btn" style="height:24px;padding:2px 7px;font-size:9px;text-decoration:none;display:inline-flex;align-items:center;gap:2px;background:#e0e7ff;color:#4338ca;border:1px solid #c7d2fe;" title="Two Page PDF">&#128203; 2P</a>'
                     : '';
                 const editIcon = EDIT_TOKEN && Date.now() < EDIT_TOKEN_EXPIRY ? '&#128275;' : '&#128272;';
+                const rec      = esc(r.recordNo);
+                const typ      = esc(r.type);
                 return '<tr>' +
                     '<td style="padding:5px 6px;">' + typeBadge + '</td>' +
-                    '<td style="font-weight:700;font-size:10px;padding:5px 6px;">' + esc(r.recordNo) + '</td>' +
+                    '<td style="font-weight:700;font-size:10px;padding:5px 6px;">' + rec + '</td>' +
                     '<td style="font-size:10px;padding:5px 6px;">' + esc(r.invoiceNo || '—') + '</td>' +
                     '<td style="font-size:10px;padding:5px 6px;white-space:nowrap;">' + esc(r.date || '—') + '</td>' +
                     '<td style="font-size:10px;padding:5px 6px;">' + esc(r.party || r.receiver || '—') + '</td>' +
@@ -4215,13 +4305,25 @@
                     '<td style="text-align:center;padding:4px 6px;">' +
                         '<div style="display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap;justify-content:center;">' +
                             pdfBtn + pdf2Btn +
-                            '<button onclick="openPreviewModal(\'' + escQ(r.recordNo) + '\',\'' + r.type + '\')" class="btn" style="height:24px;padding:2px 7px;font-size:9px;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;">&#128065; View</button>' +
-                            '<button onclick="openEditFlow(\'' + escQ(r.recordNo) + '\',\'' + r.type + '\')" class="btn" style="height:24px;padding:2px 7px;font-size:9px;background:#fef3c7;color:#b45309;border:1px solid #fde68a;">' + editIcon + ' Edit</button>' +
+                            '<button data-act="view" data-rec="' + rec + '" data-typ="' + typ + '" class="btn js-row-act" style="height:24px;padding:2px 7px;font-size:9px;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;">&#128065; View</button>' +
+                            '<button data-act="edit" data-rec="' + rec + '" data-typ="' + typ + '" class="btn js-row-act" style="height:24px;padding:2px 7px;font-size:9px;background:#fef3c7;color:#b45309;border:1px solid #fde68a;">' + editIcon + ' Edit</button>' +
                         '</div>' +
                     '</td>' +
                 '</tr>';
             }).join('');
         }
+
+        // v6.1: One delegated listener on document handles every dynamically-rendered
+        //       row-action button — no inline handlers, no XSS surface.
+        document.addEventListener('click', function(ev) {
+            const btn = ev.target.closest && ev.target.closest('.js-row-act');
+            if (!btn) return;
+            const rec = btn.getAttribute('data-rec') || '';
+            const typ = btn.getAttribute('data-typ') || '';
+            const act = btn.getAttribute('data-act') || '';
+            if (act === 'view' && typeof openPreviewModal === 'function') openPreviewModal(rec, typ);
+            else if (act === 'edit' && typeof openEditFlow === 'function') openEditFlow(rec, typ);
+        });
 
         function setSearchStatus(msg) {
             const el = document.getElementById('searchStatusText');
@@ -5245,15 +5347,7 @@
                 const result  = await syncToCloud(payload);
                 hideSyncOverlay();
 
-                if (result.status === 'DUPLICATE') {
-                    IS_DIGITALLY_SIGNED = false;
-                    let linkHtml = "";
-                    if (result.existingLink) {
-                        linkHtml = ' <a href="' + result.existingLink + '" target="_blank">View existing PDF &#8599;</a>';
-                    }
-                    showToast('&#9888; Duplicate blocked: ' + result.message + linkHtml, 'warn', 12000);
-                    return;
-                }
+                // v6.1: DUPLICATE handling removed (server no longer blocks duplicates).
 
                 if (result.status === 'ERROR') {
                     IS_DIGITALLY_SIGNED = false;
@@ -5445,6 +5539,30 @@
         let MASTER_ITEMS     = [];   // loaded from server
         let MASTER_SUPPLIERS = [];   // loaded from server
 
+        // v6.1: sessionStorage TTL cache for master data (5-minute freshness window).
+        //       Cuts a server round-trip every time the Master Data panel opens.
+        const MD_CACHE = {
+            ITEMS_KEY:     'md_items_v61',
+            SUPP_KEY:      'md_supp_v61',
+            TTL_MS:        5 * 60 * 1000,
+            read: function(key) {
+                try {
+                    const raw = sessionStorage.getItem(key);
+                    if (!raw) return null;
+                    const obj = JSON.parse(raw);
+                    if (!obj || (Date.now() - (obj.ts || 0)) > MD_CACHE.TTL_MS) return null;
+                    return obj.data;
+                } catch (e) { return null; }
+            },
+            write: function(key, data) {
+                try { sessionStorage.setItem(key, JSON.stringify({ ts: Date.now(), data: data })); } catch (e) {}
+            },
+            invalidate: function() {
+                sessionStorage.removeItem(MD_CACHE.ITEMS_KEY);
+                sessionStorage.removeItem(MD_CACHE.SUPP_KEY);
+            }
+        };
+
         // ── Sub-tab switching ──
         function switchMasterSubTab(tabId) {
             ['itemMasterSub','supplierMasterSub','settingsSub'].forEach(function(id) {
@@ -5462,9 +5580,23 @@
             if (tabId === 'settingsSub') refreshSettingsSigBadges();
         }
 
-        // ── Load Item Master from server ──
-        async function loadItemMaster() {
+        // ── Load Item Master (v6.1 sessionStorage cache, 5 min TTL) ──
+        async function loadItemMaster(forceRefresh) {
             const body = document.getElementById('itemMasterBody');
+
+            // v6.1: serve from cache when fresh and not forced
+            if (!forceRefresh) {
+                const cached = MD_CACHE.read(MD_CACHE.ITEMS_KEY);
+                if (cached) {
+                    MASTER_ITEMS = cached;
+                    renderItemMasterTable(MASTER_ITEMS);
+                    buildItemDropdowns();
+                    const cntEl = document.getElementById('itemMasterCount');
+                    if (cntEl) cntEl.innerText = MASTER_ITEMS.length + ' items (cached)';
+                    return;
+                }
+            }
+
             body.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:20px;color:#94a3b8;">Loading...</td></tr>';
             try {
                 const res  = await fetch(APPS_SCRIPT_URL + '?action=getItemMaster', { method:'GET', redirect:'follow' });
@@ -5472,6 +5604,7 @@
                 if (data.status !== 'OK') { body.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:20px;color:#ef4444;">' + esc(data.message) + '</td></tr>'; return; }
 
                 MASTER_ITEMS = data.items || [];
+                MD_CACHE.write(MD_CACHE.ITEMS_KEY, MASTER_ITEMS);
                 renderItemMasterTable(MASTER_ITEMS);
                 buildItemDropdowns();
                 document.getElementById('itemMasterCount').innerText = MASTER_ITEMS.length + ' items';
@@ -5523,7 +5656,7 @@
                 showToast('&#9989; ' + data.message, 'success', 3000);
                 // Clear form
                 ['mi_itemName','mi_itemDesc','mi_subCategory','mi_rate','mi_make'].forEach(function(id) { document.getElementById(id).value = ''; });
-                loadItemMaster();
+                MD_CACHE.invalidate(); loadItemMaster(true);
             } catch(err) { showToast('&#10060; Network error: ' + err.message, 'error', 5000); }
         }
 
@@ -5533,13 +5666,26 @@
                 const res  = await fetch(APPS_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({ action:'deleteItem', rowNum:rowNum }), redirect:'follow' });
                 const data = await res.json();
                 showToast(data.status === 'OK' ? '&#9989; ' + data.message : '&#10060; ' + data.message, data.status === 'OK' ? 'success' : 'error', 3000);
-                loadItemMaster();
+                MD_CACHE.invalidate(); loadItemMaster(true);
             } catch(err) { showToast('&#10060; ' + err.message, 'error', 4000); }
         }
 
-        // ── Load Supplier Master from server ──
-        async function loadSupplierMaster() {
+        // ── Load Supplier Master (v6.1 sessionStorage cache, 5 min TTL) ──
+        async function loadSupplierMaster(forceRefresh) {
             const body = document.getElementById('supplierMasterBody');
+
+            if (!forceRefresh) {
+                const cached = MD_CACHE.read(MD_CACHE.SUPP_KEY);
+                if (cached) {
+                    MASTER_SUPPLIERS = cached;
+                    renderSupplierMasterTable(MASTER_SUPPLIERS);
+                    buildSupplierDropdown();
+                    const cntEl = document.getElementById('supplierMasterCount');
+                    if (cntEl) cntEl.innerText = MASTER_SUPPLIERS.length + ' suppliers (cached)';
+                    return;
+                }
+            }
+
             body.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#94a3b8;">Loading...</td></tr>';
             try {
                 const res  = await fetch(APPS_SCRIPT_URL + '?action=getSupplierMaster', { method:'GET', redirect:'follow' });
@@ -5547,6 +5693,7 @@
                 if (data.status !== 'OK') { body.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#ef4444;">' + esc(data.message) + '</td></tr>'; return; }
 
                 MASTER_SUPPLIERS = data.suppliers || [];
+                MD_CACHE.write(MD_CACHE.SUPP_KEY, MASTER_SUPPLIERS);
                 renderSupplierMasterTable(MASTER_SUPPLIERS);
                 buildSupplierDropdown();
                 document.getElementById('supplierMasterCount').innerText = MASTER_SUPPLIERS.length + ' suppliers';
@@ -5595,7 +5742,7 @@
                 if (data.status !== 'OK') { showToast('&#10060; ' + (data.message||'Error'), 'error', 4000); return; }
                 showToast('&#9989; ' + data.message, 'success', 3000);
                 ['ms_supplierName','ms_contactPerson','ms_phone','ms_email','ms_gstNo','ms_city'].forEach(function(id) { document.getElementById(id).value = ''; });
-                loadSupplierMaster();
+                MD_CACHE.invalidate(); loadSupplierMaster(true);
             } catch(err) { showToast('&#10060; Network error: ' + err.message, 'error', 5000); }
         }
 
@@ -5605,7 +5752,7 @@
                 const res  = await fetch(APPS_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({ action:'deleteSupplier', rowNum:rowNum }), redirect:'follow' });
                 const data = await res.json();
                 showToast(data.status === 'OK' ? '&#9989; ' + data.message : '&#10060; ' + data.message, data.status === 'OK' ? 'success' : 'error', 3000);
-                loadSupplierMaster();
+                MD_CACHE.invalidate(); loadSupplierMaster(true);
             } catch(err) { showToast('&#10060; ' + err.message, 'error', 4000); }
         }
 
