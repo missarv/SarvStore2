@@ -2312,11 +2312,15 @@
             // ── GST = 0 check: require Edit Password authorization ──
             // v9.0.1: Only INWARD enforces the GST-0 gate. INWARD NB is non-billable
             //         by design, so 0% GST is the expected case and needs no override.
+            // v9.0.2: Supplier "SIHF-I" is intra-group transfer → 0% GST is legitimate,
+            //         so it bypasses the gate even on INWARD.
             const entryType = (document.getElementById('entryTypeSelect').value || '').toUpperCase();
             const taxRaw    = document.getElementById('totalTaxAmount').innerText || '0';
             const totalTax  = parseFloat(taxRaw.replace(/[^0-9.-]/g, '')) || 0;
+            const supplier  = (document.getElementById('supplierName').value || '').trim().toUpperCase();
+            const isSihfI   = (supplier === 'SIHF-I');
 
-            if (entryType === 'INWARD' && totalTax === 0) {
+            if (entryType === 'INWARD' && totalTax === 0 && !isSihfI) {
                 // Show Edit Password gate
                 openGstZeroAuthModal();
                 return;
