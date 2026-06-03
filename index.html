@@ -1481,12 +1481,14 @@
                         placeholder="&#128269; Search: invoice / inward no / supplier / item..."
                         style="flex:2; min-width:180px;" autocomplete="off">
 
-                    <!-- Type filter -->
+                    <!-- Type filter (v6.5: subtype-aware) -->
                     <select class="form-control" id="searchTypeFilter"
-                        style="width:130px; font-weight:600; color:#0f172a; flex-shrink:0;">
+                        style="width:140px; font-weight:600; color:#0f172a; flex-shrink:0;">
                         <option value="ALL">All Types</option>
-                        <option value="INWARD">Inward Only</option>
-                        <option value="OUTWARD">Outward Only</option>
+                        <option value="INWARD">INWARD</option>
+                        <option value="INWARD NB">INWARD NB</option>
+                        <option value="OUTWARD">OUTWARD</option>
+                        <option value="ISSUE">ISSUE</option>
                     </select>
 
                     <!-- Date From -->
@@ -1532,18 +1534,20 @@
                     <table id="searchResultsTable">
                         <thead>
                             <tr>
-                                <th style="width:6%;">Type</th>
-                                <th style="width:16%;">Record No.</th>
-                                <th style="width:12%;">Invoice No.</th>
-                                <th style="width:9%;">Date</th>
-                                <th style="width:17%;">Party / Supplier</th>
-                                <th style="width:9%;">Amount</th>
-                                <th style="width:31%; text-align:center;">Actions</th>
+                                <th style="width:5%;">Type</th>
+                                <th style="width:13%;">Record No.</th>
+                                <th style="width:10%;">Invoice No.</th>
+                                <th style="width:8%;">Date</th>
+                                <th style="width:14%;">Party / Supplier</th>
+                                <th style="width:12%;">Receiver Name</th>
+                                <th style="width:7%; text-align:right;">Total Bill Qty</th>
+                                <th style="width:8%;">Amount</th>
+                                <th style="width:23%; text-align:center;">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="searchResultsBody">
                             <tr>
-                                <td colspan="7" style="text-align:center; padding:30px; color:#94a3b8;">
+                                <td colspan="9" style="text-align:center; padding:30px; color:#94a3b8;">
                                     &#9203; Loading all records...
                                 </td>
                             </tr>
@@ -4295,12 +4299,20 @@
                 const editIcon = EDIT_TOKEN && Date.now() < EDIT_TOKEN_EXPIRY ? '&#128275;' : '&#128272;';
                 const rec      = esc(r.recordNo);
                 const typ      = esc(r.type);
+                // v6.4: dedicated columns for Receiver Name and Total Bill Qty
+                const recv     = esc(r.receiver || '—');
+                const totQtyN  = (typeof r.totalQty === 'number') ? r.totalQty : parseFloat(r.totalQty || 0) || 0;
+                const totQtyTxt = totQtyN > 0
+                    ? (totQtyN % 1 === 0 ? String(totQtyN) : totQtyN.toFixed(2))
+                    : '—';
                 return '<tr>' +
                     '<td style="padding:5px 6px;">' + typeBadge + '</td>' +
                     '<td style="font-weight:700;font-size:10px;padding:5px 6px;">' + rec + '</td>' +
                     '<td style="font-size:10px;padding:5px 6px;">' + esc(r.invoiceNo || '—') + '</td>' +
                     '<td style="font-size:10px;padding:5px 6px;white-space:nowrap;">' + esc(r.date || '—') + '</td>' +
-                    '<td style="font-size:10px;padding:5px 6px;">' + esc(r.party || r.receiver || '—') + '</td>' +
+                    '<td style="font-size:10px;padding:5px 6px;">' + esc(r.party || '—') + '</td>' +
+                    '<td style="font-size:10px;padding:5px 6px;">' + recv + '</td>' +
+                    '<td style="font-weight:700;text-align:right;font-size:10px;padding:5px 6px;">' + totQtyTxt + '</td>' +
                     '<td style="font-weight:700;text-align:right;font-size:10px;padding:5px 6px;">' + amount + '</td>' +
                     '<td style="text-align:center;padding:4px 6px;">' +
                         '<div style="display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap;justify-content:center;">' +
@@ -4330,13 +4342,34 @@
             if (el) el.innerHTML = msg;
         }
 
+        // v6.5: helpers — map dropdown value to (a) the backend's coarse type and
+        //                  (b) an optional entryType post-filter.
+        //   ALL       -> {type:'ALL',     entryType:null}
+        //   INWARD    -> {type:'INWARD',  entryType:'INWARD'}     (excludes INWARD NB)
+        //   INWARD NB -> {type:'INWARD',  entryType:'INWARD NB'}
+        //   OUTWARD   -> {type:'OUTWARD', entryType:'OUTWARD'}    (excludes ISSUE)
+        //   ISSUE     -> {type:'OUTWARD', entryType:'ISSUE'}
+        function resolveTypeFilter(uiValue) {
+            const v = String(uiValue || 'ALL').toUpperCase().trim();
+            if (v === 'INWARD NB') return { type: 'INWARD',  entryType: 'INWARD NB' };
+            if (v === 'ISSUE')     return { type: 'OUTWARD', entryType: 'ISSUE' };
+            if (v === 'INWARD')    return { type: 'INWARD',  entryType: 'INWARD' };
+            if (v === 'OUTWARD')   return { type: 'OUTWARD', entryType: 'OUTWARD' };
+            return { type: 'ALL', entryType: null };
+        }
+        function matchesEntryType(r, wanted) {
+            if (!wanted) return true;
+            return String(r.entryType || r.type || '').toUpperCase().trim() === wanted;
+        }
+
         // ── Load ALL records (on tab open + "All Records" button) ──
         async function loadAllRecords() {
-            const typeFilter = document.getElementById('searchTypeFilter').value;
-            const dateFrom   = document.getElementById('filterDateFrom').value;
-            const dateTo     = document.getElementById('filterDateTo').value;
-            const bodyEl     = document.getElementById('searchResultsBody');
-            const tw         = document.getElementById('truncatedWarning');
+            const uiTypeFilter = document.getElementById('searchTypeFilter').value;
+            const tf           = resolveTypeFilter(uiTypeFilter);   // v6.5
+            const dateFrom     = document.getElementById('filterDateFrom').value;
+            const dateTo       = document.getElementById('filterDateTo').value;
+            const bodyEl       = document.getElementById('searchResultsBody');
+            const tw           = document.getElementById('truncatedWarning');
 
             if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf("script.google.com") === -1) {
                 setSearchStatus('&#10060; Apps Script URL not configured.');
@@ -4344,10 +4377,10 @@
             }
 
             setSearchStatus('&#9203; Loading all records...');
-            bodyEl.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:#94a3b8;">&#9203; Fetching all entries from Google Sheet...</td></tr>';
+            bodyEl.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:24px;color:#94a3b8;">&#9203; Fetching all entries from Google Sheet...</td></tr>';
 
             try {
-                let url = APPS_SCRIPT_URL + '?action=getAllRecords&type=' + encodeURIComponent(typeFilter);
+                let url = APPS_SCRIPT_URL + '?action=getAllRecords&type=' + encodeURIComponent(tf.type);
                 if (dateFrom) url += '&dateFrom=' + encodeURIComponent(dateFrom);
                 if (dateTo)   url += '&dateTo='   + encodeURIComponent(dateTo);
 
@@ -4356,28 +4389,32 @@
 
                 if (data.status !== 'OK') {
                     setSearchStatus('&#10060; Error: ' + (data.message || 'unknown'));
-                    bodyEl.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#ef4444;">' + esc(data.message || 'Error') + '</td></tr>';
+                    bodyEl.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#ef4444;">' + esc(data.message || 'Error') + '</td></tr>';
                     return;
                 }
 
-                const results = data.results || [];
+                let results = data.results || [];
+                // v6.5: subtype post-filter (only kicks in when a specific entryType is picked)
+                if (tf.entryType) results = results.filter(function(r) { return matchesEntryType(r, tf.entryType); });
+
                 if (tw) tw.style.display = data.truncated ? 'inline' : 'none';
 
                 if (results.length === 0) {
                     const rangeMsg = (dateFrom || dateTo) ? ' for selected date range' : '';
                     setSearchStatus('&#8505;&#65039; No records found' + rangeMsg);
-                    bodyEl.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:#94a3b8;">No records found' + esc(rangeMsg) + '.</td></tr>';
+                    bodyEl.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:#94a3b8;">No records found' + esc(rangeMsg) + '.</td></tr>';
                     return;
                 }
 
                 const suffix = (dateFrom || dateTo) ? ' (date filtered)' : ' — all entries';
+                const typeLbl = tf.entryType ? (' &middot; ' + tf.entryType) : '';
                 setSearchStatus('&#128196; <strong>' + results.length + '</strong> record(s)' +
-                    (data.total > results.length ? ' of ' + data.total : '') + suffix);
+                    (data.total > results.length ? ' of ' + data.total : '') + suffix + typeLbl);
                 bodyEl.innerHTML = buildResultRows(results);
 
             } catch (err) {
                 setSearchStatus('&#10060; Network error: ' + err.message);
-                bodyEl.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#ef4444;">' + esc(err.message) + '</td></tr>';
+                bodyEl.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#ef4444;">' + esc(err.message) + '</td></tr>';
             }
         }
 
@@ -4398,7 +4435,7 @@
             }
 
             setSearchStatus('&#9203; Searching...');
-            bodyEl.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#94a3b8;">Searching...</td></tr>';
+            bodyEl.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#94a3b8;">Searching...</td></tr>';
 
             try {
                 const res  = await fetch(APPS_SCRIPT_URL + '?action=search&q=' + encodeURIComponent(q), { method: 'GET', redirect: 'follow' });
@@ -4406,14 +4443,16 @@
 
                 if (data.status !== 'OK') {
                     setSearchStatus('&#10060; Error: ' + (data.message || 'unknown'));
-                    bodyEl.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#ef4444;">' + esc(data.message || 'Error') + '</td></tr>';
+                    bodyEl.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#ef4444;">' + esc(data.message || 'Error') + '</td></tr>';
                     return;
                 }
 
                 let results = data.results || [];
 
-                // Client-side type filter
-                if (typeFilter !== 'ALL') results = results.filter(function(r){ return r.type === typeFilter; });
+                // v6.5: subtype-aware client filter (ALL / INWARD / INWARD NB / OUTWARD / ISSUE)
+                const tf = resolveTypeFilter(typeFilter);
+                if (tf.type !== 'ALL')      results = results.filter(function(r){ return r.type === tf.type; });
+                if (tf.entryType)           results = results.filter(function(r){ return matchesEntryType(r, tf.entryType); });
 
                 // Client-side date filter
                 const dfrom = document.getElementById('filterDateFrom').value;
@@ -4429,7 +4468,7 @@
 
                 if (results.length === 0) {
                     setSearchStatus('&#8505;&#65039; No records matching "' + esc(q) + '"');
-                    bodyEl.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:#94a3b8;">No matches found for "' + esc(q) + '".</td></tr>';
+                    bodyEl.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:#94a3b8;">No matches found for "' + esc(q) + '".</td></tr>';
                     return;
                 }
 
@@ -4438,7 +4477,7 @@
 
             } catch (err) {
                 setSearchStatus('&#10060; Network error: ' + err.message);
-                bodyEl.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#ef4444;">' + esc(err.message) + '</td></tr>';
+                bodyEl.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#ef4444;">' + esc(err.message) + '</td></tr>';
             }
         }
 
