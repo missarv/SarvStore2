@@ -2310,11 +2310,13 @@
             CURRENT_SUBMIT_CONTEXT = "INWARD";
 
             // ── GST = 0 check: require Edit Password authorization ──
+            // v9.0.1: Only INWARD enforces the GST-0 gate. INWARD NB is non-billable
+            //         by design, so 0% GST is the expected case and needs no override.
             const entryType = (document.getElementById('entryTypeSelect').value || '').toUpperCase();
             const taxRaw    = document.getElementById('totalTaxAmount').innerText || '0';
             const totalTax  = parseFloat(taxRaw.replace(/[^0-9.-]/g, '')) || 0;
 
-            if ((entryType === 'INWARD' || entryType === 'INWARD NB') && totalTax === 0) {
+            if (entryType === 'INWARD' && totalTax === 0) {
                 // Show Edit Password gate
                 openGstZeroAuthModal();
                 return;
