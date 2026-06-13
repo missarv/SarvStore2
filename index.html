@@ -1239,7 +1239,7 @@
                 <div class="grid-4">
                     <div class="form-group">
                         <label>Receiving Date</label>
-                        <input type="date" class="form-control" id="receivingDate">
+                        <input type="date" class="form-control" id="receivingDate" readonly style="background:#f1f5f9;cursor:not-allowed;">
                     </div>
                     <div class="form-group">
                         <label>Serial No. (Auto)</label>
@@ -1358,7 +1358,7 @@
                 <div class="grid-4">
                     <div class="form-group">
                         <label>Date</label>
-                        <input type="date" class="form-control" id="outDate">
+                        <input type="date" class="form-control" id="outDate" readonly style="background:#f1f5f9;cursor:not-allowed;">
                     </div>
                     <div class="form-group">
                         <label>Serial No. (Auto)</label>
@@ -1481,14 +1481,12 @@
                         placeholder="&#128269; Search: invoice / inward no / supplier / item..."
                         style="flex:2; min-width:180px;" autocomplete="off">
 
-                    <!-- Type filter (v6.5: subtype-aware) -->
+                    <!-- Type filter -->
                     <select class="form-control" id="searchTypeFilter"
-                        style="width:140px; font-weight:600; color:#0f172a; flex-shrink:0;">
+                        style="width:130px; font-weight:600; color:#0f172a; flex-shrink:0;">
                         <option value="ALL">All Types</option>
-                        <option value="INWARD">INWARD</option>
-                        <option value="INWARD NB">INWARD NB</option>
-                        <option value="OUTWARD">OUTWARD</option>
-                        <option value="ISSUE">ISSUE</option>
+                        <option value="INWARD">Inward Only</option>
+                        <option value="OUTWARD">Outward Only</option>
                     </select>
 
                     <!-- Date From -->
@@ -1513,6 +1511,10 @@
                         &#128196; All Records</button>
                     <button class="btn" id="clearSearchBtn"
                         style="background:#e2e8f0; color:#475569; white-space:nowrap; flex-shrink:0;">&#10005; Clear</button>
+                    <button class="btn" id="excelDownloadBtn" onclick="downloadFilteredExcel()"
+                        style="background:#16a34a; color:#fff; white-space:nowrap; flex-shrink:0; display:none; border:none;">
+                        &#128190; Excel
+                    </button>
                 </div>
 
                 <!-- Edit Session Banner -->
@@ -1534,20 +1536,18 @@
                     <table id="searchResultsTable">
                         <thead>
                             <tr>
-                                <th style="width:5%;">Type</th>
-                                <th style="width:13%;">Record No.</th>
-                                <th style="width:10%;">Invoice No.</th>
-                                <th style="width:8%;">Date</th>
-                                <th style="width:14%;">Party / Supplier</th>
-                                <th style="width:12%;">Receiver Name</th>
-                                <th style="width:7%; text-align:right;">Total Bill Qty</th>
-                                <th style="width:8%;">Amount</th>
-                                <th style="width:23%; text-align:center;">Actions</th>
+                                <th style="width:6%;">Type</th>
+                                <th style="width:16%;">Record No.</th>
+                                <th style="width:12%;">Invoice No.</th>
+                                <th style="width:9%;">Date</th>
+                                <th style="width:17%;">Party / Supplier</th>
+                                <th style="width:9%;">Amount</th>
+                                <th style="width:31%; text-align:center;">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="searchResultsBody">
                             <tr>
-                                <td colspan="9" style="text-align:center; padding:30px; color:#94a3b8;">
+                                <td colspan="7" style="text-align:center; padding:30px; color:#94a3b8;">
                                     &#9203; Loading all records...
                                 </td>
                             </tr>
@@ -1599,24 +1599,27 @@
                     <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
                         <input type="text" class="form-control" id="itemMasterSearch" placeholder="&#128269; Search items..." style="flex:1; height:30px; font-size:11px;" oninput="filterMasterTable('itemMasterSearch','itemMasterBody')">
                         <span id="itemMasterCount" style="font-size:11px; font-weight:700; color:#64748b;">0 items</span>
-                        <button class="btn" onclick="loadItemMaster(true)" style="background:#e0f2fe; color:#0369a1; font-size:10px; height:28px; padding:0 10px;">&#128260; Refresh</button>
+                        <button class="btn" onclick="loadItemMaster()" style="background:#e0f2fe; color:#0369a1; font-size:10px; height:28px; padding:0 10px;">&#128260; Refresh</button>
                     </div>
                     <div class="table-container" style="max-height:350px; overflow-y:auto;">
                         <table style="width:100%; border-collapse:collapse; font-size:11px;">
                             <thead><tr style="background:#0f172a; color:#fff; position:sticky; top:0;">
-                                <th style="padding:6px; width:5%;">#</th>
-                                <th style="padding:6px; width:8%;">Code</th>
-                                <th style="padding:6px; width:18%;">Item Name</th>
-                                <th style="padding:6px; width:20%;">Description</th>
-                                <th style="padding:6px; width:10%;">Category</th>
-                                <th style="padding:6px; width:10%;">Sub Cat</th>
-                                <th style="padding:6px; width:8%;">Rate</th>
-                                <th style="padding:6px; width:6%;">UOM</th>
-                                <th style="padding:6px; width:9%;">Make</th>
-                                <th style="padding:6px; width:6%;">&#128465;</th>
+                                <th style="padding:6px; width:4%;">#</th>
+                                <th style="padding:6px; width:7%;">Code</th>
+                                <th style="padding:6px; width:14%;">Item Name</th>
+                                <th style="padding:6px; width:14%;">Description</th>
+                                <th style="padding:6px; width:8%;">Category</th>
+                                <th style="padding:6px; width:7%;">Sub Cat</th>
+                                <th style="padding:6px; width:7%;">Rate</th>
+                                <th style="padding:6px; width:5%;">UOM</th>
+                                <th style="padding:6px; width:7%;">Make</th>
+                                <th style="padding:6px; width:6%; background:#0c4a3e;">IN Qty</th>
+                                <th style="padding:6px; width:6%; background:#7c2d12;">OUT Qty</th>
+                                <th style="padding:6px; width:7%; background:#1e3a5f;">Balance Qty</th>
+                                <th style="padding:6px; width:5%;">&#128465;</th>
                             </tr></thead>
                             <tbody id="itemMasterBody">
-                                <tr><td colspan="10" style="text-align:center; padding:20px; color:#94a3b8;">Loading items...</td></tr>
+                                <tr><td colspan="13" style="text-align:center; padding:20px; color:#94a3b8;">Loading items...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -1649,7 +1652,7 @@
                     <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
                         <input type="text" class="form-control" id="supplierMasterSearch" placeholder="&#128269; Search suppliers..." style="flex:1; height:30px; font-size:11px;" oninput="filterMasterTable('supplierMasterSearch','supplierMasterBody')">
                         <span id="supplierMasterCount" style="font-size:11px; font-weight:700; color:#64748b;">0 suppliers</span>
-                        <button class="btn" onclick="loadSupplierMaster(true)" style="background:#dcfce7; color:#166534; font-size:10px; height:28px; padding:0 10px;">&#128260; Refresh</button>
+                        <button class="btn" onclick="loadSupplierMaster()" style="background:#dcfce7; color:#166534; font-size:10px; height:28px; padding:0 10px;">&#128260; Refresh</button>
                     </div>
                     <div class="table-container" style="max-height:350px; overflow-y:auto;">
                         <table style="width:100%; border-collapse:collapse; font-size:11px;">
@@ -1994,14 +1997,14 @@
             <!-- Header -->
             <div style="text-align:center; margin-bottom:14px;">
                 <div style="font-size:38px;">&#9888;&#65039;</div>
-                <h3 style="margin:6px 0 4px; color:#dc2626; font-size:16px; font-weight:800;">GST = &#8377;0 Detected</h3>
-                <p style="margin:0; font-size:11px; color:#64748b;">This entry has <strong>Zero Tax (GST = 0)</strong>.<br>Edit Password authorization is required to proceed.</p>
+                <h3 id="gstAuthTitle" style="margin:6px 0 4px; color:#dc2626; font-size:16px; font-weight:800;">GST = &#8377;0 Detected</h3>
+                <p id="gstAuthSubtitle" style="margin:0; font-size:11px; color:#64748b;">This entry has <strong>Zero Tax (GST = 0)</strong>.<br>Edit Password authorization is required to proceed.</p>
             </div>
 
             <!-- Warning box -->
             <div style="background:#fef2f2; border:1.5px solid #fca5a5; border-radius:8px; padding:10px 14px; margin-bottom:14px;">
                 <div style="font-size:11px; font-weight:700; color:#dc2626; margin-bottom:4px;">&#128272; Why is this required?</div>
-                <div style="font-size:11px; color:#b91c1c; line-height:1.6;">
+                <div id="gstAuthReasons" style="font-size:11px; color:#b91c1c; line-height:1.6;">
                     Entries with GST = 0 may indicate:<br>
                     &bull; Exempt goods / services<br>
                     &bull; Incorrect tax calculation<br>
@@ -2159,9 +2162,7 @@
         // =====================================================================
         // CLOUD SYNC CONFIG  --  paste your deployed Apps Script Web App URL
         // =====================================================================
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzHVKX1lmjv7_9qTNMvqeZ_0fot3JguU4AtFGMCwYnT8jB1Qg-2tmnldCRn4Y4Z3yTM/exec";
-        const APP_VERSION     = "6.1";           // v6.1 — stamped on every payload
-        const MAX_ITEMS_PER_ENTRY = 50;          // mirror of backend cap
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxgQXhZ--8APaK6LqOFxv5vzOZmeqnwMBOuEVbPvjUh_WqpM9v5NM-KEKV5lgadbotB/exec";
         // =====================================================================
 
         // Two independent counters — one per Entry Type
@@ -2278,59 +2279,48 @@
         document.getElementById('calcGrossWeight').addEventListener('input', calculateFreightData);
         document.getElementById('calcFreightRate').addEventListener('input', calculateFreightData);
 
-        // v6.1: Submit-button guard prevents double-click → double-save race.
-        // The guard auto-releases after 3s if the user cancels at the PIN modal,
-        // and is also released by the final flow (success, error, or close).
-        function lockSubmitBtn(id, label) {
-            const btn = document.getElementById(id);
-            if (!btn) return null;
-            btn.disabled = true;
-            btn.dataset.origText = btn.innerText;
-            btn.innerText = label || 'Working…';
-            btn.style.opacity = '0.65';
-            return btn;
-        }
-        function unlockSubmitBtn(id) {
-            const btn = document.getElementById(id);
-            if (!btn) return;
-            btn.disabled = false;
-            if (btn.dataset.origText) btn.innerText = btn.dataset.origText;
-            btn.style.opacity = '1';
-        }
-        // Make these globally reachable for the save handlers
-        window.lockSubmitBtn   = lockSubmitBtn;
-        window.unlockSubmitBtn = unlockSubmitBtn;
-
-        document.getElementById('submitBtn').addEventListener('click', function() {
-            // v6.1: guard against double-clicks. Auto-release after 90s safety window.
-            if (this.disabled) return;
-            lockSubmitBtn('submitBtn', 'Verifying…');
-            setTimeout(function(){ unlockSubmitBtn('submitBtn'); }, 90000);
-
+        document.getElementById('submitBtn').addEventListener('click', async function() {
             CURRENT_SUBMIT_CONTEXT = "INWARD";
 
-            // ── GST = 0 check: require Edit Password authorization ──
-            // v9.0.1: Only INWARD enforces the GST-0 gate. INWARD NB is non-billable
-            //         by design, so 0% GST is the expected case and needs no override.
-            // v9.0.2: Supplier "SIHF-I" is intra-group transfer → 0% GST is legitimate,
-            //         so it bypasses the gate even on INWARD.
+            const submitBtnEl = this;
+
+            // ── Duplicate Inward No. pre-check (before signature flow) ──
+            const inwardNoVal = (document.getElementById('regEntryNo')?.value || '').trim();
+            if (inwardNoVal) {
+                submitBtnEl.disabled = true;
+                const origLabel = submitBtnEl.innerHTML;
+                submitBtnEl.innerHTML = '&#9203; Checking...';
+                try {
+                    const chkRes  = await fetch(APPS_SCRIPT_URL + '?action=checkDuplicateNo&docType=INWARD&docNo=' + encodeURIComponent(inwardNoVal), { method: 'GET', redirect: 'follow' });
+                    const chkData = await chkRes.json();
+                    if (chkData.status === 'OK' && chkData.duplicate) {
+                        showToast('&#9888; Duplicate blocked: ' + chkData.message, 'warn', 8000);
+                        submitBtnEl.disabled = false;
+                        submitBtnEl.innerHTML = origLabel;
+                        return;
+                    }
+                } catch(e) {
+                    // If pre-check fails (network), let normal flow continue —
+                    // server-side findInwardDuplicate_ is the final safeguard.
+                }
+                submitBtnEl.disabled = false;
+                submitBtnEl.innerHTML = origLabel;
+            }
+
+            // ── Edit-Password authorization rules ──
             const entryType = (document.getElementById('entryTypeSelect').value || '').toUpperCase();
             const taxRaw    = document.getElementById('totalTaxAmount').innerText || '0';
             const totalTax  = parseFloat(taxRaw.replace(/[^0-9.-]/g, '')) || 0;
-            const supplier  = (document.getElementById('supplierName').value || '').trim().toUpperCase();
-            const isSihfI   = (supplier === 'SARV INDIA HOME FURNISHING (UNIT-I)');
 
-            if (entryType === 'INWARD' && totalTax === 0 && !isSihfI) {
-                // Show Edit Password gate
-                openGstZeroAuthModal();
+            // Rule 1: INWARD + GST=0 → suspicious (exempt entries normally use INWARD NB)
+            if (entryType === 'INWARD' && totalTax === 0) {
+                openGstZeroAuthModal('GST_ZERO');
                 return;
             }
 
-            // v6.1: item-count cap (mirror of backend)
-            const rowCount = document.querySelectorAll('#itemTableBody tr').length;
-            if (rowCount > MAX_ITEMS_PER_ENTRY) {
-                showToast('&#9888; Too many items (' + rowCount + '). Max allowed: ' + MAX_ITEMS_PER_ENTRY + '. Split into multiple entries.', 'error', 8000);
-                unlockSubmitBtn('submitBtn');
+            // Rule 2: INWARD NB + GST>0 → suspicious (NB entries are normally GST-exempt)
+            if (entryType === 'INWARD NB' && totalTax > 0) {
+                openGstZeroAuthModal('NB_GST_POSITIVE');
                 return;
             }
 
@@ -2491,9 +2481,6 @@
             document.getElementById('secureSignatureModal').style.display = "none";
             document.getElementById('pinErrorMsg').style.display = "none";
             document.getElementById('signaturePinInput').value  = "";
-            // v6.1: user backed out — release whichever Submit lock was set
-            unlockSubmitBtn('submitBtn');
-            unlockSubmitBtn('outSubmitBtn');
         });
 
         document.getElementById('verifySigBtn').addEventListener('click', async function() {
@@ -2701,7 +2688,16 @@
                 const result = await syncToCloud(payload);
                 hideSyncOverlay();
 
-                // v6.1: DUPLICATE handling removed (server no longer blocks duplicates).
+                if (result.status === 'DUPLICATE') {
+                    IS_DIGITALLY_SIGNED = false;
+                    let linkHtml = "";
+                    if (result.existingLink) {
+                        linkHtml = ' <a href="' + result.existingLink + '" target="_blank">View existing PDF &#8599;</a>';
+                    }
+                    showToast('&#9888; Duplicate blocked: ' + result.message + linkHtml, 'warn', 12000);
+                    saveBtn.disabled = false; saveBtn.style.opacity = '1';
+                    return;
+                }
 
                 if (result.status === 'ERROR') {
                     IS_DIGITALLY_SIGNED = false;
@@ -2734,8 +2730,6 @@
             } finally {
                 saveBtn.disabled = false;
                 saveBtn.style.opacity = '1';
-                // v6.1: release the Submit-Inward lock whichever way we exit
-                unlockSubmitBtn('submitBtn');
             }
         });
 
@@ -2756,36 +2750,11 @@
                     listPrice:   parseFloat(row.querySelector('.list-price-field').value) || 0,
                     discountPct: parseFloat(row.querySelector('.discount-field').value) || 0,
                     rate:        parseFloat(row.querySelector('.rate-field').value) || 0,
-                    // v6.1: prefer a numeric data-attribute if the row writer set one;
-                    //       fall back to scraping innerText for backward compat.
-                    total:       (function() {
-                        const el = row.querySelector('.row-total-cell');
-                        if (!el) return 0;
-                        if (el.dataset && el.dataset.value !== undefined) return parseFloat(el.dataset.value) || 0;
-                        return parseFloat(String(el.innerText || '').replace(/[^0-9.\-]+/g, '')) || 0;
-                    })()
+                    total:       row.querySelector('.row-total-cell').innerText
                 });
             });
 
-            // v6.1: numeric reader — accepts (a) raw display string ('₹1,234.56'),
-            //                     (b) a DOM element, or (c) an element ID. In (b)/(c)
-            //                     prefers .dataset.value to avoid locale-format issues.
-            const num = function(x) {
-                if (x === null || x === undefined) return 0;
-                let el = null;
-                if (typeof x === 'string') {
-                    el = document.getElementById(x);
-                    if (!el) {
-                        // raw string — strip formatting
-                        return parseFloat(x.replace(/[^0-9.\-]+/g, '')) || 0;
-                    }
-                } else {
-                    el = x;
-                }
-                if (el && el.dataset && el.dataset.value !== undefined) return parseFloat(el.dataset.value) || 0;
-                const raw = String((el && (el.innerText || el.value)) || '').replace(/[^0-9.\-]+/g, '');
-                return parseFloat(raw) || 0;
-            };
+            const num = s => parseFloat(String(s).replace(/[^0-9.\-]+/g, "")) || 0;
             const pdfHtmlSingle  = buildLandscapePdfHtml();
             const pdfHtmlTwoPage = buildBothCopiesPortraitDoc(
                 generateInvoiceHTML('ACCOUNT COPY'),
@@ -2823,7 +2792,6 @@
                 costOnYarn:    document.getElementById('calcCostOnYarn').value,
                 remarks:       (document.getElementById('inwRemarks').value || '').trim(),
                 signedAt:      SIGNATURE_TIMESTAMP,
-                signatureImage: SIGNATURE_IMAGE_DATA || "",   // v6.1: server uploads as PNG
                 pdfHtml:        pdfHtmlSingle,    // legacy field — for backward compat
                 pdfHtmlSingle:  pdfHtmlSingle,
                 pdfHtmlTwoPage: pdfHtmlTwoPage
@@ -3103,10 +3071,9 @@
                 <div class="sig-line" style="border-top: 1px solid red; color:red;">PENDING SIGNATURE</div>
             `;
             if (IS_DIGITALLY_SIGNED && SIGNATURE_IMAGE_DATA) {
-                // v6.3.1: only the designation label is removed; timestamp stays.
                 digitalStampHtml = `
                     <div class="sig-image-wrap"><img src="${SIGNATURE_IMAGE_DATA}" alt="Signature"></div>
-                    <div class="sig-line"></div>
+                    <div class="sig-line">Store In-Charge</div>
                     <div class="sig-timestamp">${SIGNATURE_TIMESTAMP}</div>
                 `;
             }
@@ -3230,31 +3197,14 @@
             `;
         }
 
-        // v6.1: stamp every outgoing payload with version + clientId for audit traceability,
-        //       and retry transient HTTP failures once (exponential backoff: 1.5s).
         async function syncToCloud(payload) {
-            const body = JSON.stringify(Object.assign({}, payload || {}, {
-                v:        APP_VERSION,
-                clientId: getClientId()
-            }));
-            const send = async function() {
-                return fetch(APPS_SCRIPT_URL, {
-                    method:  'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // text/plain avoids CORS preflight
-                    body:    body,
-                    redirect:'follow'
-                });
-            };
-            let res;
-            try {
-                res = await send();
-                if (!res.ok) throw new Error('HTTP ' + res.status);
-            } catch (firstErr) {
-                // single retry — most transient Apps Script blips clear within 1–2s
-                await new Promise(function(r){ setTimeout(r, 1500); });
-                res = await send();
-                if (!res.ok) throw new Error('HTTP ' + res.status + ' (after retry)');
-            }
+            const res = await fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload),
+                redirect: 'follow'
+            });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
             return await res.json();
         }
 
@@ -3580,7 +3530,8 @@
                 const uom = row.querySelector('.item-uom').value;
                 const weight = row.querySelector('.weight-field').value || '0';
                 const wunit = row.querySelector('.item-wunit').value;
-                const rate = row.querySelector('.rate-field').value || '0';
+                const rate       = row.querySelector('.rate-field').value || '0';
+                const discountPct = row.querySelector('.discount-field') ? row.querySelector('.discount-field').value || '0' : '0';
                 const tot = row.querySelector('.row-total-cell').innerText;
 
                 rowsHtml += `
@@ -3589,19 +3540,27 @@
                         <td><strong>${name}</strong><br><small style="color:#555">${desc}</small><br><small style="color:#555">MAKE: ${make} | Cat: ${cat}</small></td>
                         <td style="text-align:center;">${qty} ${uom}</td>
                         <td style="text-align:center; font-weight:600; color:#475569;">${weight} ${wunit}</td>
-                        <td style="text-align:right;">&#8377;${parseFloat(rate).toFixed(2)}</td>
+                        <td style="text-align:right;">&#8377;${parseFloat(rate).toFixed(2)}${parseFloat(discountPct)>0 ? `<br><span style="font-size:9px;color:#64748b;">(${parseFloat(discountPct).toFixed(discountPct%1===0?0:2)}%)</span>` : ''}</td>
                         <td style="text-align:right; font-weight:700;">${tot}</td>
                     </tr>
                 `;
             }
 
             // ── Totals accumulation ──
-            let totalQty = 0, totalWeight = 0, totalGross = 0;
+            let totalQty = 0, totalWeight = 0, totalGross = 0, totalDiscountAmt = 0;
             for(let row of rows) {
                 totalQty    += parseFloat(row.querySelector('.qty-field').value    || 0) || 0;
                 totalWeight += parseFloat(row.querySelector('.weight-field').value || 0) || 0;
                 const grossTxt = (row.querySelector('.row-total-cell').innerText || '0').replace(/[^0-9.-]/g, '');
                 totalGross  += parseFloat(grossTxt) || 0;
+                // Discount amount = (List Price - Rate) × Qty, for each item
+                const rQty       = parseFloat(row.querySelector('.qty-field').value)       || 0;
+                const rListPrice = parseFloat(row.querySelector('.list-price-field').value) || 0;
+                const rDiscPct   = parseFloat(row.querySelector('.discount-field').value)   || 0;
+                if (rDiscPct > 0) {
+                    const rRate = rListPrice - (rListPrice * rDiscPct / 100);
+                    totalDiscountAmt += (rListPrice - rRate) * rQty;
+                }
             }
             const totalsFooterRow = rows.length > 0 ? `
                 <tr style="background:#f1f5f9; font-weight:800; border-top:2px solid #0f172a;">
@@ -3628,10 +3587,9 @@
                 <div class="sig-line" style="border-top: 1px solid red; color:red;">PENDING SIGNATURE</div>
             `;
             if(IS_DIGITALLY_SIGNED && SIGNATURE_IMAGE_DATA) {
-                // v6.3.1: only the designation label is removed; timestamp stays.
                 digitalStampHtml = `
                     <div class="sig-image-wrap"><img src="${SIGNATURE_IMAGE_DATA}" alt="Signature"></div>
-                    <div class="sig-line"></div>
+                    <div class="sig-line">${_sigDesig}</div>
                     <div class="sig-timestamp">${SIGNATURE_TIMESTAMP}</div>
                 `;
             }
@@ -3695,6 +3653,7 @@
                         </div>
 
                         <table class="inv-summary-table">
+                            ${totalDiscountAmt > 0 ? `<tr><td style="color:#b91c1c;">Total Discounted Amt:</td><td style="text-align:right; color:#b91c1c; font-weight:600;">- &#8377;${totalDiscountAmt.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2})}</td></tr>` : ''}
                             <tr><td>Items Base Total:</td><td style="text-align:right;">${baseTot}</td></tr>
                             <tr><td>Freight Expenses (+):</td><td style="text-align:right;">${freight}</td></tr>
                             <tr><td>Taxable Value:</td><td style="text-align:right; font-weight:700;">${taxable}</td></tr>
@@ -3853,6 +3812,10 @@
             document.getElementById('printModalOverlay').style.display = 'flex';
         }
 
+        // Lock Receiving Date / Outward Date to today (not changeable)
+        document.getElementById('receivingDate').valueAsDate = new Date();
+        document.getElementById('outDate').valueAsDate       = new Date();
+
         updateInwardNoPreview();
         addNewRow();
         calculateBillingSummary();   // sync GST labels with default selection
@@ -3864,6 +3827,7 @@
             document.getElementById('filterDateFrom').value   = '';
             document.getElementById('filterDateTo').value     = '';
             document.getElementById('searchTypeFilter').value = 'ALL';
+            showExcelBtn([]);
             setSearchStatus('');
             const tw = document.getElementById('truncatedWarning');
             if (tw) tw.style.display = 'none';
@@ -3936,7 +3900,7 @@
         let CURRENT_SUBMIT_CONTEXT = "INWARD";
 
         const OUTWARD_NATURE_OPTIONS = {
-            "OUTWARD": ["Repair", "Transfer", "Sample", "Replacement", "Non-Returnable"],
+            "OUTWARD": ["Repair", "Transfer", "Non-Returnable"],
             "ISSUE":   ["Consumable", "Temporary Use"]
         };
         const OUTWARD_MODE_LABEL = {
@@ -4042,23 +4006,40 @@
         document.getElementById('outDate').addEventListener('change', updateOutwardNoPreview);
 
         // ---------- OUTWARD SUBMIT ----------
-        document.getElementById('outSubmitBtn').addEventListener('click', function() {
-            // v6.1: guard against double-clicks
-            if (this.disabled) return;
-            lockSubmitBtn('outSubmitBtn', 'Verifying…');
-            setTimeout(function(){ unlockSubmitBtn('outSubmitBtn'); }, 90000);
+        document.getElementById('outSubmitBtn').addEventListener('click', async function() {
+            const outSubmitBtnEl = this;
+
+            // ── Duplicate Outward No. pre-check (before signature flow) ──
+            const outwardNoVal = (document.getElementById('outRegEntryNo')?.value || '').trim();
+            if (outwardNoVal) {
+                outSubmitBtnEl.disabled = true;
+                const origLabel = outSubmitBtnEl.innerHTML;
+                outSubmitBtnEl.innerHTML = '&#9203; Checking...';
+                try {
+                    const chkRes  = await fetch(APPS_SCRIPT_URL + '?action=checkDuplicateNo&docType=OUTWARD&docNo=' + encodeURIComponent(outwardNoVal), { method: 'GET', redirect: 'follow' });
+                    const chkData = await chkRes.json();
+                    if (chkData.status === 'OK' && chkData.duplicate) {
+                        showToast('&#9888; Duplicate blocked: ' + chkData.message, 'warn', 8000);
+                        outSubmitBtnEl.disabled = false;
+                        outSubmitBtnEl.innerHTML = origLabel;
+                        return;
+                    }
+                } catch(e) {
+                    // network failure — fall through, server-side findOutwardDuplicate_ is final safeguard
+                }
+                outSubmitBtnEl.disabled = false;
+                outSubmitBtnEl.innerHTML = origLabel;
+            }
 
             // basic validation — common fields
             const required = [
                 ['outPartyName',   'Party Name'],
                 ['outReceiverName','Receiver Name']
             ];
-            for (const pair of required) {
-                const id = pair[0], label = pair[1];
+            for (const [id, label] of required) {
                 if (!document.getElementById(id).value.toString().trim()) {
                     showToast('&#9888; ' + label + ' is required.', 'warn', 5000);
                     document.getElementById(id).focus();
-                    unlockSubmitBtn('outSubmitBtn');
                     return;
                 }
             }
@@ -4067,13 +4048,6 @@
             const rows = document.querySelectorAll('#outwardItemTableBody tr');
             if (rows.length === 0) {
                 showToast('&#9888; Add at least one item.', 'warn', 5000);
-                unlockSubmitBtn('outSubmitBtn');
-                return;
-            }
-            // v6.1: item-count cap (mirror of backend)
-            if (rows.length > MAX_ITEMS_PER_ENTRY) {
-                showToast('&#9888; Too many items (' + rows.length + '). Max: ' + MAX_ITEMS_PER_ENTRY + '. Split into multiple entries.', 'error', 8000);
-                unlockSubmitBtn('outSubmitBtn');
                 return;
             }
             let hasValidItem = false;
@@ -4085,8 +4059,12 @@
             }
             if (!hasValidItem) {
                 showToast('&#9888; At least one item must have Item Name, Description, and Qty &gt; 0.', 'warn', 6000);
-                unlockSubmitBtn('outSubmitBtn');
                 return;
+            }
+
+            // Warn if more than 1 item — outward sheet currently saves only the FIRST item
+            if (rows.length > 1) {
+                showToast('&#9888; Note: Outward sheet only stores the <b>first item</b>. Other ' + (rows.length - 1) + ' item(s) will appear in the PDF but NOT in the sheet.', 'warn', 8000);
             }
 
             CURRENT_SUBMIT_CONTEXT = "OUTWARD";
@@ -4171,7 +4149,15 @@
                 const result = await syncToCloud(payload);
                 hideSyncOverlay();
 
-                // v6.1: DUPLICATE handling removed (server no longer blocks duplicates).
+                if (result.status === 'DUPLICATE') {
+                    IS_DIGITALLY_SIGNED = false;
+                    let linkHtml = "";
+                    if (result.existingLink) {
+                        linkHtml = ' <a href="' + result.existingLink + '" target="_blank">View existing PDF &#8599;</a>';
+                    }
+                    showToast('&#9888; Duplicate blocked: ' + result.message + linkHtml, 'warn', 12000);
+                    return;
+                }
                 if (result.status === 'ERROR') {
                     IS_DIGITALLY_SIGNED = false;
                     showToast('&#10060; Save failed: ' + (result.message || 'Unknown'), 'error', 10000);
@@ -4201,9 +4187,6 @@
                 hideSyncOverlay();
                 IS_DIGITALLY_SIGNED = false;
                 showToast('&#10060; Network error: ' + err.message, 'error', 10000);
-            } finally {
-                // v6.1: release the Outward Submit lock on any exit path
-                unlockSubmitBtn('outSubmitBtn');
             }
         }
 
@@ -4284,98 +4267,51 @@
         // =====================================================================
 
         // ── Shared row builder for both search + loadAll ──
-        // v6.1: XSS-safe — record numbers/types ride on data-attrs (esc'd), and the
-        //       View/Edit buttons are wired up via event delegation in bindResultActions().
         function buildResultRows(results) {
             if (!results || results.length === 0) return '';
             return results.map(function(r) {
                 const isInward  = (r.type === 'INWARD');
                 const typeColor = isInward ? '#0284c7' : '#7c3aed';
-                const typeBadge = '<span style="background:' + typeColor + ';color:#fff;padding:2px 7px;border-radius:9px;font-size:9px;font-weight:700;">' + esc(r.type) + '</span>' +
-                    (r.entryType && r.entryType !== r.type ? '<br><span style="font-size:9px;color:#94a3b8;">' + esc(r.entryType) + '</span>' : '');
-                const amount   = (typeof r.amount === 'number' && r.amount > 0) ? formatter.format(r.amount) : esc(r.amount || '—');
-                const safePdf  = String(r.pdfLink  || '').replace(/"/g,'&quot;');
-                const safePdf2 = String(r.pdfLink2 || '').replace(/"/g,'&quot;');
+                const typeBadge = '<span style="background:' + typeColor + ';color:#fff;padding:2px 7px;border-radius:9px;font-size:9px;font-weight:700;">' + r.type + '</span>' +
+                    (r.entryType && r.entryType !== r.type ? '<br><span style="font-size:9px;color:#94a3b8;">' + r.entryType + '</span>' : '');
+                const amount   = (typeof r.amount === 'number' && r.amount > 0) ? formatter.format(r.amount) : (r.amount || '—');
                 const pdfBtn   = r.pdfLink
-                    ? '<a href="' + safePdf + '" target="_blank" rel="noopener" class="btn btn-primary" style="height:24px;padding:2px 7px;font-size:9px;text-decoration:none;display:inline-flex;align-items:center;gap:2px;" title="Single Page PDF">&#128196; 1P</a>'
+                    ? '<a href="' + r.pdfLink + '" target="_blank" rel="noopener" class="btn btn-primary" style="height:24px;padding:2px 7px;font-size:9px;text-decoration:none;display:inline-flex;align-items:center;gap:2px;" title="Single Page PDF">&#128196; 1P</a>'
                     : '';
                 const pdf2Btn  = r.pdfLink2
-                    ? '<a href="' + safePdf2 + '" target="_blank" rel="noopener" class="btn" style="height:24px;padding:2px 7px;font-size:9px;text-decoration:none;display:inline-flex;align-items:center;gap:2px;background:#e0e7ff;color:#4338ca;border:1px solid #c7d2fe;" title="Two Page PDF">&#128203; 2P</a>'
+                    ? '<a href="' + r.pdfLink2 + '" target="_blank" rel="noopener" class="btn" style="height:24px;padding:2px 7px;font-size:9px;text-decoration:none;display:inline-flex;align-items:center;gap:2px;background:#e0e7ff;color:#4338ca;border:1px solid #c7d2fe;" title="Two Page PDF">&#128203; 2P</a>'
                     : '';
                 const editIcon = EDIT_TOKEN && Date.now() < EDIT_TOKEN_EXPIRY ? '&#128275;' : '&#128272;';
-                const rec      = esc(r.recordNo);
-                const typ      = esc(r.type);
-                // v6.4: dedicated columns for Receiver Name and Total Bill Qty
-                const recv     = esc(r.receiver || '—');
-                const totQtyN  = (typeof r.totalQty === 'number') ? r.totalQty : parseFloat(r.totalQty || 0) || 0;
-                const totQtyTxt = totQtyN > 0
-                    ? (totQtyN % 1 === 0 ? String(totQtyN) : totQtyN.toFixed(2))
-                    : '—';
                 return '<tr>' +
                     '<td style="padding:5px 6px;">' + typeBadge + '</td>' +
-                    '<td style="font-weight:700;font-size:10px;padding:5px 6px;">' + rec + '</td>' +
+                    '<td style="font-weight:700;font-size:10px;padding:5px 6px;">' + esc(r.recordNo) + '</td>' +
                     '<td style="font-size:10px;padding:5px 6px;">' + esc(r.invoiceNo || '—') + '</td>' +
                     '<td style="font-size:10px;padding:5px 6px;white-space:nowrap;">' + esc(r.date || '—') + '</td>' +
-                    '<td style="font-size:10px;padding:5px 6px;">' + esc(r.party || '—') + '</td>' +
-                    '<td style="font-size:10px;padding:5px 6px;">' + recv + '</td>' +
-                    '<td style="font-weight:700;text-align:right;font-size:10px;padding:5px 6px;">' + totQtyTxt + '</td>' +
+                    '<td style="font-size:10px;padding:5px 6px;">' + esc(r.party || r.receiver || '—') + '</td>' +
                     '<td style="font-weight:700;text-align:right;font-size:10px;padding:5px 6px;">' + amount + '</td>' +
                     '<td style="text-align:center;padding:4px 6px;">' +
                         '<div style="display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap;justify-content:center;">' +
                             pdfBtn + pdf2Btn +
-                            '<button data-act="view" data-rec="' + rec + '" data-typ="' + typ + '" class="btn js-row-act" style="height:24px;padding:2px 7px;font-size:9px;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;">&#128065; View</button>' +
-                            '<button data-act="edit" data-rec="' + rec + '" data-typ="' + typ + '" class="btn js-row-act" style="height:24px;padding:2px 7px;font-size:9px;background:#fef3c7;color:#b45309;border:1px solid #fde68a;">' + editIcon + ' Edit</button>' +
+                            '<button onclick="openPreviewModal(\'' + escQ(r.recordNo) + '\',\'' + r.type + '\')" class="btn" style="height:24px;padding:2px 7px;font-size:9px;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;">&#128065; View</button>' +
+                            '<button onclick="openEditFlow(\'' + escQ(r.recordNo) + '\',\'' + r.type + '\')" class="btn" style="height:24px;padding:2px 7px;font-size:9px;background:#fef3c7;color:#b45309;border:1px solid #fde68a;">' + editIcon + ' Edit</button>' +
                         '</div>' +
                     '</td>' +
                 '</tr>';
             }).join('');
         }
 
-        // v6.1: One delegated listener on document handles every dynamically-rendered
-        //       row-action button — no inline handlers, no XSS surface.
-        document.addEventListener('click', function(ev) {
-            const btn = ev.target.closest && ev.target.closest('.js-row-act');
-            if (!btn) return;
-            const rec = btn.getAttribute('data-rec') || '';
-            const typ = btn.getAttribute('data-typ') || '';
-            const act = btn.getAttribute('data-act') || '';
-            if (act === 'view' && typeof openPreviewModal === 'function') openPreviewModal(rec, typ);
-            else if (act === 'edit' && typeof openEditFlow === 'function') openEditFlow(rec, typ);
-        });
-
         function setSearchStatus(msg) {
             const el = document.getElementById('searchStatusText');
             if (el) el.innerHTML = msg;
         }
 
-        // v6.5: helpers — map dropdown value to (a) the backend's coarse type and
-        //                  (b) an optional entryType post-filter.
-        //   ALL       -> {type:'ALL',     entryType:null}
-        //   INWARD    -> {type:'INWARD',  entryType:'INWARD'}     (excludes INWARD NB)
-        //   INWARD NB -> {type:'INWARD',  entryType:'INWARD NB'}
-        //   OUTWARD   -> {type:'OUTWARD', entryType:'OUTWARD'}    (excludes ISSUE)
-        //   ISSUE     -> {type:'OUTWARD', entryType:'ISSUE'}
-        function resolveTypeFilter(uiValue) {
-            const v = String(uiValue || 'ALL').toUpperCase().trim();
-            if (v === 'INWARD NB') return { type: 'INWARD',  entryType: 'INWARD NB' };
-            if (v === 'ISSUE')     return { type: 'OUTWARD', entryType: 'ISSUE' };
-            if (v === 'INWARD')    return { type: 'INWARD',  entryType: 'INWARD' };
-            if (v === 'OUTWARD')   return { type: 'OUTWARD', entryType: 'OUTWARD' };
-            return { type: 'ALL', entryType: null };
-        }
-        function matchesEntryType(r, wanted) {
-            if (!wanted) return true;
-            return String(r.entryType || r.type || '').toUpperCase().trim() === wanted;
-        }
-
         // ── Load ALL records (on tab open + "All Records" button) ──
         async function loadAllRecords() {
-            const uiTypeFilter = document.getElementById('searchTypeFilter').value;
-            const tf           = resolveTypeFilter(uiTypeFilter);   // v6.5
-            const dateFrom     = document.getElementById('filterDateFrom').value;
-            const dateTo       = document.getElementById('filterDateTo').value;
-            const bodyEl       = document.getElementById('searchResultsBody');
-            const tw           = document.getElementById('truncatedWarning');
+            const typeFilter = document.getElementById('searchTypeFilter').value;
+            const dateFrom   = document.getElementById('filterDateFrom').value;
+            const dateTo     = document.getElementById('filterDateTo').value;
+            const bodyEl     = document.getElementById('searchResultsBody');
+            const tw         = document.getElementById('truncatedWarning');
 
             if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf("script.google.com") === -1) {
                 setSearchStatus('&#10060; Apps Script URL not configured.');
@@ -4383,10 +4319,10 @@
             }
 
             setSearchStatus('&#9203; Loading all records...');
-            bodyEl.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:24px;color:#94a3b8;">&#9203; Fetching all entries from Google Sheet...</td></tr>';
+            bodyEl.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:#94a3b8;">&#9203; Fetching all entries from Google Sheet...</td></tr>';
 
             try {
-                let url = APPS_SCRIPT_URL + '?action=getAllRecords&type=' + encodeURIComponent(tf.type);
+                let url = APPS_SCRIPT_URL + '?action=getAllRecords&type=' + encodeURIComponent(typeFilter);
                 if (dateFrom) url += '&dateFrom=' + encodeURIComponent(dateFrom);
                 if (dateTo)   url += '&dateTo='   + encodeURIComponent(dateTo);
 
@@ -4395,32 +4331,29 @@
 
                 if (data.status !== 'OK') {
                     setSearchStatus('&#10060; Error: ' + (data.message || 'unknown'));
-                    bodyEl.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#ef4444;">' + esc(data.message || 'Error') + '</td></tr>';
+                    bodyEl.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#ef4444;">' + esc(data.message || 'Error') + '</td></tr>';
                     return;
                 }
 
-                let results = data.results || [];
-                // v6.5: subtype post-filter (only kicks in when a specific entryType is picked)
-                if (tf.entryType) results = results.filter(function(r) { return matchesEntryType(r, tf.entryType); });
-
+                const results = data.results || [];
                 if (tw) tw.style.display = data.truncated ? 'inline' : 'none';
 
                 if (results.length === 0) {
                     const rangeMsg = (dateFrom || dateTo) ? ' for selected date range' : '';
                     setSearchStatus('&#8505;&#65039; No records found' + rangeMsg);
-                    bodyEl.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:#94a3b8;">No records found' + esc(rangeMsg) + '.</td></tr>';
+                    bodyEl.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:#94a3b8;">No records found' + esc(rangeMsg) + '.</td></tr>';
                     return;
                 }
 
                 const suffix = (dateFrom || dateTo) ? ' (date filtered)' : ' — all entries';
-                const typeLbl = tf.entryType ? (' &middot; ' + tf.entryType) : '';
                 setSearchStatus('&#128196; <strong>' + results.length + '</strong> record(s)' +
-                    (data.total > results.length ? ' of ' + data.total : '') + suffix + typeLbl);
+                    (data.total > results.length ? ' of ' + data.total : '') + suffix);
                 bodyEl.innerHTML = buildResultRows(results);
+                showExcelBtn(results);
 
             } catch (err) {
                 setSearchStatus('&#10060; Network error: ' + err.message);
-                bodyEl.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#ef4444;">' + esc(err.message) + '</td></tr>';
+                bodyEl.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#ef4444;">' + esc(err.message) + '</td></tr>';
             }
         }
 
@@ -4441,7 +4374,7 @@
             }
 
             setSearchStatus('&#9203; Searching...');
-            bodyEl.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#94a3b8;">Searching...</td></tr>';
+            bodyEl.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#94a3b8;">Searching...</td></tr>';
 
             try {
                 const res  = await fetch(APPS_SCRIPT_URL + '?action=search&q=' + encodeURIComponent(q), { method: 'GET', redirect: 'follow' });
@@ -4449,16 +4382,14 @@
 
                 if (data.status !== 'OK') {
                     setSearchStatus('&#10060; Error: ' + (data.message || 'unknown'));
-                    bodyEl.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#ef4444;">' + esc(data.message || 'Error') + '</td></tr>';
+                    bodyEl.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#ef4444;">' + esc(data.message || 'Error') + '</td></tr>';
                     return;
                 }
 
                 let results = data.results || [];
 
-                // v6.5: subtype-aware client filter (ALL / INWARD / INWARD NB / OUTWARD / ISSUE)
-                const tf = resolveTypeFilter(typeFilter);
-                if (tf.type !== 'ALL')      results = results.filter(function(r){ return r.type === tf.type; });
-                if (tf.entryType)           results = results.filter(function(r){ return matchesEntryType(r, tf.entryType); });
+                // Client-side type filter
+                if (typeFilter !== 'ALL') results = results.filter(function(r){ return r.type === typeFilter; });
 
                 // Client-side date filter
                 const dfrom = document.getElementById('filterDateFrom').value;
@@ -4474,16 +4405,17 @@
 
                 if (results.length === 0) {
                     setSearchStatus('&#8505;&#65039; No records matching "' + esc(q) + '"');
-                    bodyEl.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:#94a3b8;">No matches found for "' + esc(q) + '".</td></tr>';
+                    bodyEl.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:#94a3b8;">No matches found for "' + esc(q) + '".</td></tr>';
                     return;
                 }
 
                 setSearchStatus('&#9989; <strong>' + results.length + '</strong> record(s) matching "' + esc(q) + '"');
                 bodyEl.innerHTML = buildResultRows(results);
+                showExcelBtn(results);
 
             } catch (err) {
                 setSearchStatus('&#10060; Network error: ' + err.message);
-                bodyEl.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#ef4444;">' + esc(err.message) + '</td></tr>';
+                bodyEl.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#ef4444;">' + esc(err.message) + '</td></tr>';
             }
         }
 
@@ -4538,7 +4470,7 @@
                     '<td>' + esc(it.make) + ' / ' + esc(it.cat) + '</td>' +
                     '<td style="text-align:center;">' + (it.qty||0) + ' ' + esc(it.uom) + '</td>' +
                     '<td style="text-align:center;">' + (it.weight||0) + ' ' + esc(it.wunit) + '</td>' +
-                    '<td style="text-align:right;">&#8377;' + parseFloat(it.rate||0).toFixed(2) + '</td>' +
+                    '<td style="text-align:right;">&#8377;' + parseFloat(it.rate||0).toFixed(2) + (parseFloat(it.discountPct||0)>0?'<br><span style="font-size:9px;color:#64748b;">('+parseFloat(it.discountPct).toFixed(parseFloat(it.discountPct)%1===0?0:2)+'%)</span>':'') + '</td>' +
                     '<td style="text-align:right;font-weight:700;">' + fmtR(it.total) + '</td>' +
                 '</tr>';
             });
@@ -5392,7 +5324,15 @@
                 const result  = await syncToCloud(payload);
                 hideSyncOverlay();
 
-                // v6.1: DUPLICATE handling removed (server no longer blocks duplicates).
+                if (result.status === 'DUPLICATE') {
+                    IS_DIGITALLY_SIGNED = false;
+                    let linkHtml = "";
+                    if (result.existingLink) {
+                        linkHtml = ' <a href="' + result.existingLink + '" target="_blank">View existing PDF &#8599;</a>';
+                    }
+                    showToast('&#9888; Duplicate blocked: ' + result.message + linkHtml, 'warn', 12000);
+                    return;
+                }
 
                 if (result.status === 'ERROR') {
                     IS_DIGITALLY_SIGNED = false;
@@ -5584,30 +5524,6 @@
         let MASTER_ITEMS     = [];   // loaded from server
         let MASTER_SUPPLIERS = [];   // loaded from server
 
-        // v6.1: sessionStorage TTL cache for master data (5-minute freshness window).
-        //       Cuts a server round-trip every time the Master Data panel opens.
-        const MD_CACHE = {
-            ITEMS_KEY:     'md_items_v61',
-            SUPP_KEY:      'md_supp_v61',
-            TTL_MS:        5 * 60 * 1000,
-            read: function(key) {
-                try {
-                    const raw = sessionStorage.getItem(key);
-                    if (!raw) return null;
-                    const obj = JSON.parse(raw);
-                    if (!obj || (Date.now() - (obj.ts || 0)) > MD_CACHE.TTL_MS) return null;
-                    return obj.data;
-                } catch (e) { return null; }
-            },
-            write: function(key, data) {
-                try { sessionStorage.setItem(key, JSON.stringify({ ts: Date.now(), data: data })); } catch (e) {}
-            },
-            invalidate: function() {
-                sessionStorage.removeItem(MD_CACHE.ITEMS_KEY);
-                sessionStorage.removeItem(MD_CACHE.SUPP_KEY);
-            }
-        };
-
         // ── Sub-tab switching ──
         function switchMasterSubTab(tabId) {
             ['itemMasterSub','supplierMasterSub','settingsSub'].forEach(function(id) {
@@ -5625,23 +5541,9 @@
             if (tabId === 'settingsSub') refreshSettingsSigBadges();
         }
 
-        // ── Load Item Master (v6.1 sessionStorage cache, 5 min TTL) ──
-        async function loadItemMaster(forceRefresh) {
+        // ── Load Item Master from server ──
+        async function loadItemMaster() {
             const body = document.getElementById('itemMasterBody');
-
-            // v6.1: serve from cache when fresh and not forced
-            if (!forceRefresh) {
-                const cached = MD_CACHE.read(MD_CACHE.ITEMS_KEY);
-                if (cached) {
-                    MASTER_ITEMS = cached;
-                    renderItemMasterTable(MASTER_ITEMS);
-                    buildItemDropdowns();
-                    const cntEl = document.getElementById('itemMasterCount');
-                    if (cntEl) cntEl.innerText = MASTER_ITEMS.length + ' items (cached)';
-                    return;
-                }
-            }
-
             body.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:20px;color:#94a3b8;">Loading...</td></tr>';
             try {
                 const res  = await fetch(APPS_SCRIPT_URL + '?action=getItemMaster', { method:'GET', redirect:'follow' });
@@ -5649,7 +5551,6 @@
                 if (data.status !== 'OK') { body.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:20px;color:#ef4444;">' + esc(data.message) + '</td></tr>'; return; }
 
                 MASTER_ITEMS = data.items || [];
-                MD_CACHE.write(MD_CACHE.ITEMS_KEY, MASTER_ITEMS);
                 renderItemMasterTable(MASTER_ITEMS);
                 buildItemDropdowns();
                 document.getElementById('itemMasterCount').innerText = MASTER_ITEMS.length + ' items';
@@ -5660,8 +5561,14 @@
 
         function renderItemMasterTable(items) {
             const body = document.getElementById('itemMasterBody');
-            if (!items.length) { body.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:20px;color:#94a3b8;">No items. Add your first item above.</td></tr>'; return; }
+            if (!items.length) { body.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:20px;color:#94a3b8;">No items. Add your first item above.</td></tr>'; return; }
             body.innerHTML = items.map(function(it, idx) {
+                const inQty  = parseFloat(it.inQty)  || 0;
+                const outQty = parseFloat(it.outQty) || 0;
+                const balQty = (it.balanceQty !== undefined && it.balanceQty !== null) ? parseFloat(it.balanceQty) || 0 : (inQty - outQty);
+                const fmtQty = function(v) { return (v % 1 === 0) ? v : v.toFixed(2); };
+                const balColor = balQty < 0 ? '#dc2626' : (balQty === 0 ? '#94a3b8' : '#0f766e');
+                const balBg    = balQty < 0 ? '#fef2f2' : (balQty === 0 ? '#f8fafc' : '#f0fdfa');
                 return '<tr style="border-bottom:1px solid #e2e8f0;">' +
                     '<td style="padding:5px 6px;text-align:center;color:#94a3b8;">' + (idx+1) + '</td>' +
                     '<td style="padding:5px 6px;font-family:monospace;font-size:10px;color:#7c3aed;">' + esc(it.itemCode) + '</td>' +
@@ -5672,6 +5579,9 @@
                     '<td style="padding:5px 6px;text-align:right;font-weight:700;">&#8377;' + (parseFloat(it.rate)||0).toFixed(2) + '</td>' +
                     '<td style="padding:5px 6px;">' + esc(it.uom) + '</td>' +
                     '<td style="padding:5px 6px;">' + esc(it.make) + '</td>' +
+                    '<td style="padding:5px 6px;text-align:center;font-weight:700;color:#0d9488;background:#f0fdfa;">' + fmtQty(inQty) + '</td>' +
+                    '<td style="padding:5px 6px;text-align:center;font-weight:700;color:#c2410c;background:#fff7ed;">' + fmtQty(outQty) + '</td>' +
+                    '<td style="padding:5px 6px;text-align:center;font-weight:800;color:' + balColor + ';background:' + balBg + ';">' + fmtQty(balQty) + ' ' + esc(it.uom) + '</td>' +
                     '<td style="padding:5px 6px;text-align:center;"><button onclick="deleteMasterItem(' + it.rowNum + ',\'' + escQ(it.itemName) + '\')" style="background:#fef2f2;border:1px solid #fca5a5;color:#dc2626;border-radius:4px;padding:2px 6px;font-size:10px;cursor:pointer;">&#10005;</button></td>' +
                 '</tr>';
             }).join('');
@@ -5701,7 +5611,7 @@
                 showToast('&#9989; ' + data.message, 'success', 3000);
                 // Clear form
                 ['mi_itemName','mi_itemDesc','mi_subCategory','mi_rate','mi_make'].forEach(function(id) { document.getElementById(id).value = ''; });
-                MD_CACHE.invalidate(); loadItemMaster(true);
+                loadItemMaster();
             } catch(err) { showToast('&#10060; Network error: ' + err.message, 'error', 5000); }
         }
 
@@ -5711,26 +5621,13 @@
                 const res  = await fetch(APPS_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({ action:'deleteItem', rowNum:rowNum }), redirect:'follow' });
                 const data = await res.json();
                 showToast(data.status === 'OK' ? '&#9989; ' + data.message : '&#10060; ' + data.message, data.status === 'OK' ? 'success' : 'error', 3000);
-                MD_CACHE.invalidate(); loadItemMaster(true);
+                loadItemMaster();
             } catch(err) { showToast('&#10060; ' + err.message, 'error', 4000); }
         }
 
-        // ── Load Supplier Master (v6.1 sessionStorage cache, 5 min TTL) ──
-        async function loadSupplierMaster(forceRefresh) {
+        // ── Load Supplier Master from server ──
+        async function loadSupplierMaster() {
             const body = document.getElementById('supplierMasterBody');
-
-            if (!forceRefresh) {
-                const cached = MD_CACHE.read(MD_CACHE.SUPP_KEY);
-                if (cached) {
-                    MASTER_SUPPLIERS = cached;
-                    renderSupplierMasterTable(MASTER_SUPPLIERS);
-                    buildSupplierDropdown();
-                    const cntEl = document.getElementById('supplierMasterCount');
-                    if (cntEl) cntEl.innerText = MASTER_SUPPLIERS.length + ' suppliers (cached)';
-                    return;
-                }
-            }
-
             body.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#94a3b8;">Loading...</td></tr>';
             try {
                 const res  = await fetch(APPS_SCRIPT_URL + '?action=getSupplierMaster', { method:'GET', redirect:'follow' });
@@ -5738,7 +5635,6 @@
                 if (data.status !== 'OK') { body.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#ef4444;">' + esc(data.message) + '</td></tr>'; return; }
 
                 MASTER_SUPPLIERS = data.suppliers || [];
-                MD_CACHE.write(MD_CACHE.SUPP_KEY, MASTER_SUPPLIERS);
                 renderSupplierMasterTable(MASTER_SUPPLIERS);
                 buildSupplierDropdown();
                 document.getElementById('supplierMasterCount').innerText = MASTER_SUPPLIERS.length + ' suppliers';
@@ -5787,7 +5683,7 @@
                 if (data.status !== 'OK') { showToast('&#10060; ' + (data.message||'Error'), 'error', 4000); return; }
                 showToast('&#9989; ' + data.message, 'success', 3000);
                 ['ms_supplierName','ms_contactPerson','ms_phone','ms_email','ms_gstNo','ms_city'].forEach(function(id) { document.getElementById(id).value = ''; });
-                MD_CACHE.invalidate(); loadSupplierMaster(true);
+                loadSupplierMaster();
             } catch(err) { showToast('&#10060; Network error: ' + err.message, 'error', 5000); }
         }
 
@@ -5797,7 +5693,7 @@
                 const res  = await fetch(APPS_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({ action:'deleteSupplier', rowNum:rowNum }), redirect:'follow' });
                 const data = await res.json();
                 showToast(data.status === 'OK' ? '&#9989; ' + data.message : '&#10060; ' + data.message, data.status === 'OK' ? 'success' : 'error', 3000);
-                MD_CACHE.invalidate(); loadSupplierMaster(true);
+                loadSupplierMaster();
             } catch(err) { showToast('&#10060; ' + err.message, 'error', 4000); }
         }
 
@@ -6106,7 +6002,31 @@
 
         let GST_ZERO_AUTHORIZED = false; // flag: edit pwd verified for this submission
 
-        function openGstZeroAuthModal() {
+        function openGstZeroAuthModal(reason) {
+            reason = reason || 'GST_ZERO';
+
+            const titleEl    = document.getElementById('gstAuthTitle');
+            const subtitleEl = document.getElementById('gstAuthSubtitle');
+            const reasonsEl  = document.getElementById('gstAuthReasons');
+
+            if (reason === 'NB_GST_POSITIVE') {
+                titleEl.innerHTML    = 'GST &gt; &#8377;0 on INWARD NB';
+                subtitleEl.innerHTML = 'This <strong>INWARD NB</strong> entry has <strong>GST &gt; 0</strong>.<br>Edit Password authorization is required to proceed.';
+                reasonsEl.innerHTML  = 'Entries with INWARD NB + GST &gt; 0 may indicate:<br>' +
+                    '&bull; Wrong Entry Type selected (should be INWARD)<br>' +
+                    '&bull; Incorrect tax calculation<br>' +
+                    '&bull; Special authorized transactions<br><br>' +
+                    '<strong>Only authorized personnel can submit.</strong>';
+            } else {
+                titleEl.innerHTML    = 'GST = &#8377;0 Detected';
+                subtitleEl.innerHTML = 'This entry has <strong>Zero Tax (GST = 0)</strong>.<br>Edit Password authorization is required to proceed.';
+                reasonsEl.innerHTML  = 'Entries with GST = 0 may indicate:<br>' +
+                    '&bull; Exempt goods / services<br>' +
+                    '&bull; Incorrect tax calculation<br>' +
+                    '&bull; Special authorized transactions<br><br>' +
+                    '<strong>Only authorized personnel can submit.</strong>';
+            }
+
             document.getElementById('gstZeroEditPwd').value         = '';
             document.getElementById('gstZeroAuthError').style.display = 'none';
             document.getElementById('gstZeroAttempts').style.display  = 'none';
@@ -6201,6 +6121,177 @@
                 btn.disabled  = false;
                 btn.innerText = '&#128272; Authorize & Proceed';
             }
+        }
+
+
+        // =====================================================================
+        // FEATURE 1 — EXCEL DOWNLOAD (filtered records + all Sheet fields)
+        // =====================================================================
+        // Uses SheetJS (xlsx) loaded from CDN in browser
+        // Data: whatever is currently loaded in LAST_LOADED_RESULTS
+        // All fields fetched from Google Sheet via getAllRecords or search
+        // =====================================================================
+
+        let LAST_LOADED_RESULTS = [];  // set by loadAllRecords + runRecordSearch
+
+        function showExcelBtn(results) {
+            LAST_LOADED_RESULTS = results || [];
+            const btn = document.getElementById('excelDownloadBtn');
+            if (btn) btn.style.display = LAST_LOADED_RESULTS.length > 0 ? 'inline-flex' : 'none';
+        }
+
+        async function downloadFilteredExcel() {
+            if (!LAST_LOADED_RESULTS.length) {
+                showToast('&#9888; No records loaded. Search or load records first.', 'warn', 3000);
+                return;
+            }
+
+            const btn      = document.getElementById('excelDownloadBtn');
+            const origText = btn.innerText;
+            btn.disabled   = true;
+            btn.innerText  = '⏳ Fetching...';
+
+            try {
+                // ── Load SheetJS ──
+                if (typeof XLSX === 'undefined') {
+                    btn.innerText = '⏳ Loading SheetJS...';
+                    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+                }
+
+                btn.innerText = '⏳ Downloading data...';
+
+                // ── Build URL with same filters currently active ──
+                const typeFilter = document.getElementById('searchTypeFilter').value;
+                const dateFrom   = document.getElementById('filterDateFrom').value;
+                const dateTo     = document.getElementById('filterDateTo').value;
+
+                let url = APPS_SCRIPT_URL + '?action=getSheetData&type=' + encodeURIComponent(typeFilter);
+                if (dateFrom) url += '&dateFrom=' + encodeURIComponent(dateFrom);
+                if (dateTo)   url += '&dateTo='   + encodeURIComponent(dateTo);
+
+                const res  = await fetch(url, { method: 'GET', redirect: 'follow' });
+                const data = await res.json();
+
+                if (data.status !== 'OK') {
+                    showToast('&#10060; Data fetch error: ' + (data.message || 'unknown'), 'error', 6000);
+                    return;
+                }
+
+                btn.innerText = '⏳ Building Excel...';
+
+                const wb = XLSX.utils.book_new();
+
+                // ── Sheet 1: Inward Records (ALL 44 columns) ──
+                if (data.data.inward && data.data.inward.headers) {
+                    const inwHeaders = data.data.inward.headers;
+                    const inwRows    = data.data.inward.rows || [];
+                    const wsData     = [inwHeaders].concat(inwRows);
+                    const ws         = XLSX.utils.aoa_to_sheet(wsData);
+
+                    // Column widths
+                    ws['!cols'] = inwHeaders.map(function(h) {
+                        const w = { 'Item Name':30,'Item Description':35,'Supplier':28,
+                                    'PDF (Single Page)':45,'PDF (Two Page)':45,
+                                    'Remarks':35,'Signed At':20 }[h] || 16;
+                        return { wch: w };
+                    });
+
+                    // Freeze header row
+                    ws['!freeze'] = { xSplit:0, ySplit:1 };
+
+                    XLSX.utils.book_append_sheet(wb, ws, 'Inward Records');
+                    showToast('&#9989; Inward: ' + inwRows.length + ' rows loaded...', 'success', 2000);
+                }
+
+                // ── Sheet 2: Outward Records (ALL 28 columns) ──
+                if (data.data.outward && data.data.outward.headers) {
+                    const outHeaders = data.data.outward.headers;
+                    const outRows    = data.data.outward.rows || [];
+                    const wsData2    = [outHeaders].concat(outRows);
+                    const ws2        = XLSX.utils.aoa_to_sheet(wsData2);
+
+                    ws2['!cols'] = outHeaders.map(function(h) {
+                        const w = { 'Item Name':28,'Item Description':32,'Party Name':28,
+                                    'PDF (Single Page)':45,'PDF (Two Page)':45,
+                                    'Remarks':32 }[h] || 16;
+                        return { wch: w };
+                    });
+                    ws2['!freeze'] = { xSplit:0, ySplit:1 };
+
+                    XLSX.utils.book_append_sheet(wb, ws2, 'Outward Records');
+                }
+
+                // ── Sheet 3: Summary ──
+                const today    = new Date();
+                const inwCount = (data.data.inward  && data.data.inward.count)  || 0;
+                const outCount = (data.data.outward && data.data.outward.count) || 0;
+                const totalCount = inwCount + outCount;
+
+                const summaryData = [
+                    ['SIHF-II Store Tracker — Data Export'],
+                    [''],
+                    ['Generated At',    today.toLocaleString('en-IN', {timeZone:'Asia/Kolkata'})],
+                    ['Generated By',    'Store Stock UNIT-2 App'],
+                    [''],
+                    ['── Filters Applied ──', ''],
+                    ['Type',            typeFilter === 'ALL' ? 'All (Inward + Outward)' : typeFilter],
+                    ['Date From',       dateFrom || 'No filter (All)'],
+                    ['Date To',         dateTo   || 'No filter (All)'],
+                    ['Search Query',    document.getElementById('searchQuery').value || '(none)'],
+                    [''],
+                    ['── Record Counts ──', ''],
+                    ['Inward Records',  inwCount],
+                    ['Outward Records', outCount],
+                    ['Total Rows',      totalCount],
+                    [''],
+                    ['── Sheet Structure ──', ''],
+                    ['Sheet 1 — Inward Records',  inwCount  + ' rows × 44 columns (all Google Sheet fields)'],
+                    ['Sheet 2 — Outward Records', outCount  + ' rows × 28 columns (all Google Sheet fields)'],
+                    ['Sheet 3 — Summary',         'This sheet'],
+                ];
+
+                const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+                wsSummary['!cols'] = [{wch:28},{wch:55}];
+                XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
+
+                // ── Generate filename ──
+                const dateStr  = today.getFullYear() + '-' +
+                    String(today.getMonth()+1).padStart(2,'0') + '-' +
+                    String(today.getDate()).padStart(2,'0');
+                const rangeTag = (dateFrom || dateTo)
+                    ? ('_' + (dateFrom||'').replace(/-/g,'') + '-' + (dto||'').replace(/-/g,''))
+                    : '';
+                const filename = 'SIHF2_' + typeFilter + rangeTag + '_' + dateStr + '.xlsx';
+
+                XLSX.writeFile(wb, filename);
+                showToast('&#9989; Excel downloaded: <strong>' + filename + '</strong><br><small>Inward: ' + inwCount + ' | Outward: ' + outCount + ' rows</small>', 'success', 6000);
+
+            } catch(err) {
+                showToast('&#10060; Excel error: ' + err.message, 'error', 6000);
+                console.error('Excel error:', err);
+            } finally {
+                btn.disabled  = false;
+                btn.innerText = origText;
+            }
+        }
+
+
+        function styleSheetHeader(ws, colCount) {
+            // Bold header row + column widths
+            const cols = [];
+            for (let i = 0; i < colCount; i++) cols.push({ wch: 18 });
+            ws['!cols'] = cols;
+        }
+
+        function loadScript(src) {
+            return new Promise(function(resolve, reject) {
+                if (document.querySelector('script[src="'+src+'"]')) { resolve(); return; }
+                const s = document.createElement('script');
+                s.src = src;
+                s.onload  = resolve;
+                s.onerror = reject;
+                document.head.appendChild(s);
+            });
         }
 
     </script>
