@@ -1319,8 +1319,9 @@
                                 <th style="width: 7%;">Bill Basis</th>
                                 <th style="width: 7%;">List Price</th>
                                 <th style="width: 6%;">Disc%</th>
-                                <th style="width: 7%;">Rate (&#8377;)</th>
-                                <th style="width: 9%;">Item Total</th>
+                                <th style="width: 6%;">Rate (&#8377;)</th>
+                                <th style="width: 5%;">GST%</th>
+                                <th style="width: 8%;">Item Total</th>
                                 <th style="width: 3%;"></th>
                             </tr>
                         </thead>
@@ -1331,6 +1332,29 @@
                 <div class="form-group" style="margin-top: 10px;">
                     <label>Remarks (optional)</label>
                     <textarea class="form-control" id="inwRemarks" rows="2" placeholder="Any note about this inward..." style="height: 50px; resize: vertical; padding: 6px 10px;"></textarea>
+                </div>
+
+                <!-- ── v6: Optional multi-photo upload ── -->
+                <div class="form-group" style="margin-top: 10px;">
+                    <label>&#128247; Photos (optional) <small style="color:#94a3b8; font-weight:500;">— camera or gallery, auto-saved to Drive on submit</small></label>
+                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                        <label for="inwPhotoCameraInput" id="inwCameraBtnLabel" style="display:inline-flex; align-items:center; gap:6px; background:#eff6ff; border:1.5px dashed #93c5fd; color:#1d4ed8; border-radius:8px; padding:8px 16px; font-size:12px; font-weight:700; cursor:pointer;">
+                            &#128247; Take Photo
+                        </label>
+                        <input type="file" id="inwPhotoCameraInput" accept="image/*" capture="environment" style="display:none;">
+
+                        <button type="button" id="inwWebcamBtnLabel" onclick="openWebcamModal('INWARD')" style="display:none; align-items:center; gap:6px; background:#fdf4ff; border:1.5px dashed #d8b4fe; color:#7e22ce; border-radius:8px; padding:8px 16px; font-size:12px; font-weight:700; cursor:pointer;">
+                            &#128247; Use Webcam
+                        </button>
+
+                        <label for="inwPhotoGalleryInput" style="display:inline-flex; align-items:center; gap:6px; background:#f0fdf4; border:1.5px dashed #86efac; color:#166534; border-radius:8px; padding:8px 16px; font-size:12px; font-weight:700; cursor:pointer;">
+                            &#128247; Choose Files / Gallery
+                        </label>
+                        <input type="file" id="inwPhotoGalleryInput" accept="image/*" multiple style="display:none;">
+
+                        <span id="inwPhotoCount" style="font-size:11px; color:#64748b; font-weight:600;"></span>
+                    </div>
+                    <div id="inwPhotoPreview" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;"></div>
                 </div>
             </div>
         </div>
@@ -1464,6 +1488,29 @@
                 <div class="form-group" style="margin-top: 10px;">
                     <label>Remarks (optional)</label>
                     <textarea class="form-control" id="outRemarks" rows="2" placeholder="Any note about this outward..." style="height: 50px; resize: vertical; padding: 6px 10px;"></textarea>
+                </div>
+
+                <!-- ── v6: Optional multi-photo upload ── -->
+                <div class="form-group" style="margin-top: 10px;">
+                    <label>&#128247; Photos (optional) <small style="color:#94a3b8; font-weight:500;">— camera or gallery, auto-saved to Drive on submit</small></label>
+                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                        <label for="outPhotoCameraInput" id="outCameraBtnLabel" style="display:inline-flex; align-items:center; gap:6px; background:#eff6ff; border:1.5px dashed #93c5fd; color:#1d4ed8; border-radius:8px; padding:8px 16px; font-size:12px; font-weight:700; cursor:pointer;">
+                            &#128247; Take Photo
+                        </label>
+                        <input type="file" id="outPhotoCameraInput" accept="image/*" capture="environment" style="display:none;">
+
+                        <button type="button" id="outWebcamBtnLabel" onclick="openWebcamModal('OUTWARD')" style="display:none; align-items:center; gap:6px; background:#fdf4ff; border:1.5px dashed #d8b4fe; color:#7e22ce; border-radius:8px; padding:8px 16px; font-size:12px; font-weight:700; cursor:pointer;">
+                            &#128247; Use Webcam
+                        </button>
+
+                        <label for="outPhotoGalleryInput" style="display:inline-flex; align-items:center; gap:6px; background:#f0fdf4; border:1.5px dashed #86efac; color:#166534; border-radius:8px; padding:8px 16px; font-size:12px; font-weight:700; cursor:pointer;">
+                            &#128247; Choose Files / Gallery
+                        </label>
+                        <input type="file" id="outPhotoGalleryInput" accept="image/*" multiple style="display:none;">
+
+                        <span id="outPhotoCount" style="font-size:11px; color:#64748b; font-weight:600;"></span>
+                    </div>
+                    <div id="outPhotoPreview" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;"></div>
                 </div>
             </div>
         </div>
@@ -1681,41 +1728,6 @@
                 <!-- ═══ SETTINGS SUB-TAB ═══ -->
                 <div id="settingsSub" style="display:none;">
 
-                    <!-- Signature Management -->
-                    <div style="background:#fef3c7; border:1px solid #fde68a; border-radius:10px; padding:16px; margin-bottom:16px;">
-                        <div style="font-size:13px; font-weight:800; color:#92400e; margin-bottom:4px;">&#128396; Digital Signature Management</div>
-                        <div style="font-size:11px; color:#b45309; margin-bottom:14px;">Signatures are saved in browser only. Clear karne ke baad dobara draw karna hoga.</div>
-
-                        <!-- Status badges -->
-                        <div id="settingsSigBadges" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px;"></div>
-
-                        <!-- Per-user clear buttons -->
-                        <div style="font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase; margin-bottom:8px;">Clear Individual Signature:</div>
-                        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;" id="perUserClearBtns">
-                            <button onclick="clearSigById('IC')" class="sig-clear-btn" style="background:#fff; border:1.5px solid #fca5a5; color:#dc2626; border-radius:6px; padding:5px 12px; font-size:11px; font-weight:600; cursor:pointer;">&#128465; Store In-Charge</button>
-                            <button onclick="clearSigById('GM')" class="sig-clear-btn" style="background:#fff; border:1.5px solid #fca5a5; color:#dc2626; border-radius:6px; padding:5px 12px; font-size:11px; font-weight:600; cursor:pointer;">&#128465; GM</button>
-                            <button onclick="clearSigById('MD')" class="sig-clear-btn" style="background:#fff; border:1.5px solid #fca5a5; color:#dc2626; border-radius:6px; padding:5px 12px; font-size:11px; font-weight:600; cursor:pointer;">&#128465; MD</button>
-                            <button onclick="clearSigById('AC')" class="sig-clear-btn" style="background:#fff; border:1.5px solid #fca5a5; color:#dc2626; border-radius:6px; padding:5px 12px; font-size:11px; font-weight:600; cursor:pointer;">&#128465; Accountant</button>
-                            <button onclick="clearSigById('GT')" class="sig-clear-btn" style="background:#fff; border:1.5px solid #fca5a5; color:#dc2626; border-radius:6px; padding:5px 12px; font-size:11px; font-weight:600; cursor:pointer;">&#128465; Gate Man</button>
-                        </div>
-
-                        <!-- Clear ALL button -->
-                        <div style="border-top:1px dashed #fde68a; padding-top:12px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-                            <button onclick="clearAllSignaturesFromSettings()" style="background:#dc2626; color:#fff; border:none; border-radius:7px; padding:8px 18px; font-size:12px; font-weight:700; cursor:pointer;">&#128465;&#128465; Clear ALL Signatures</button>
-                            <span style="font-size:11px; color:#b45309;">Sabhi 5 users ki saved signatures delete ho jaayengi.</span>
-                        </div>
-                    </div>
-
-                    <!-- Session Management -->
-                    <div style="background:#eff6ff; border:1px solid #bae6fd; border-radius:10px; padding:16px; margin-bottom:16px;">
-                        <div style="font-size:13px; font-weight:800; color:#0369a1; margin-bottom:4px;">&#128274; Session Management</div>
-                        <div style="font-size:11px; color:#0284c7; margin-bottom:14px;">Active login sessions aur edit tokens clear karo.</div>
-                        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                            <button onclick="resetSignatureSession()" style="background:#fff; border:1.5px solid #bae6fd; color:#0369a1; border-radius:6px; padding:6px 14px; font-size:11px; font-weight:600; cursor:pointer;">&#128274; Logout Current Signer</button>
-                            <button onclick="revokeEditSession()" style="background:#fff; border:1.5px solid #c7d2fe; color:#4338ca; border-radius:6px; padding:6px 14px; font-size:11px; font-weight:600; cursor:pointer;">&#128274; Clear Edit Session</button>
-                        </div>
-                    </div>
-
                     <!-- Autocomplete Data -->
                     <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:10px; padding:16px; margin-bottom:16px;">
                         <div style="font-size:13px; font-weight:800; color:#166534; margin-bottom:4px;">&#128190; Autocomplete Data</div>
@@ -1795,33 +1807,19 @@
                 </div>
 
                 <div class="summary-row" style="margin-top: 12px;">
-                    <span style="font-weight: 700; color: #0284c7;">SELECT GST %</span>
-                    <select class="summary-input" id="globalGstRate" style="text-align: left;">
-                        <option value="5" selected>5% GST</option>
-                        <option value="12">12% GST</option>
-                        <option value="18">18% GST</option>
-                        <option value="28">28% GST</option>
-                        <option value="0">0% GST</option>
-                    </select>
+                    <span style="font-weight: 700; color: #0284c7;">OVERALL GST % <small style="color:#94a3b8;font-weight:500;">(item-wise weighted)</small></span>
+                    <span class="summary-val" id="overallGstDisplay" style="color:#0284c7;font-weight:800;">5%</span>
                 </div>
-
-                <div class="summary-row tax-detail" style="margin-top: 12px;">
-                    <span id="cgstLabel">CGST (2.5%)</span>
-                    <span id="cgstAmount" class="summary-val">&#8377;0.00</span>
-                </div>
-
-                <div class="summary-row tax-detail">
-                    <span id="sgstLabel">SGST (2.5%)</span>
-                    <span id="sgstAmount" class="summary-val">&#8377;0.00</span>
-                </div>
-
-                <div class="summary-row tax-detail">
-                    <span id="igstLabel">IGST (5%)</span>
-                    <span id="igstAmount" class="summary-val">&#8377;0.00</span>
-                </div>
+                <!-- Hidden fields kept for sheet record / Excel accuracy — not shown to user -->
+                <span id="cgstLabel" style="display:none;">CGST (0%)</span>
+                <span id="cgstAmount" style="display:none;">&#8377;0.00</span>
+                <span id="sgstLabel" style="display:none;">SGST (0%)</span>
+                <span id="sgstAmount" style="display:none;">&#8377;0.00</span>
+                <span id="igstLabel" style="display:none;">IGST (0%)</span>
+                <span id="igstAmount" style="display:none;">&#8377;0.00</span>
 
                 <div class="summary-row total-row">
-                    <span>TOTAL TAX AMOUNT</span>
+                    <span id="appliedTaxLabel">Total Applied Tax (5% GST)</span>
                     <span class="summary-val" id="totalTaxAmount">&#8377;0.00</span>
                 </div>
 
@@ -2061,6 +2059,30 @@
         </div>
     </div>
 
+    <!-- ═══ v6: Webcam Capture Modal (for Desktop/Laptop) ═══ -->
+    <div class="secure-modal-overlay" id="webcamModal" style="display:none; z-index:3600;">
+        <div class="secure-modal-box" style="max-width:520px; width:94vw;">
+            <div style="text-align:center; margin-bottom:12px;">
+                <div style="font-size:30px;">&#128247;</div>
+                <h3 style="margin:6px 0 2px; color:#0f172a; font-size:15px; font-weight:800;">Webcam Capture</h3>
+                <p id="webcamStatusText" style="margin:0; font-size:11px; color:#64748b;">Starting camera...</p>
+            </div>
+
+            <div style="position:relative; background:#0f172a; border-radius:10px; overflow:hidden; aspect-ratio:4/3;">
+                <video id="webcamVideo" autoplay playsinline style="width:100%; height:100%; object-fit:cover; display:block;"></video>
+                <canvas id="webcamCanvas" style="display:none;"></canvas>
+            </div>
+
+            <div id="webcamErrorBox" style="display:none; margin-top:10px; background:#fef2f2; border:1px solid #fca5a5; border-radius:6px; padding:8px 12px; font-size:11px; color:#dc2626;"></div>
+
+            <div style="display:flex; gap:10px; margin-top:14px;">
+                <button class="btn" onclick="closeWebcamModal()" style="flex:1; background:#cbd5e1; color:#1e293b; font-weight:600;">Cancel</button>
+                <button class="btn btn-primary" id="webcamCaptureBtn" onclick="captureWebcamPhoto()" style="flex:1.4; background:linear-gradient(135deg,#0284c7,#0369a1); font-weight:700;" disabled>&#128247; Capture Photo</button>
+            </div>
+            <div style="margin-top:8px; font-size:10px; color:#94a3b8; text-align:center;">Browser will ask camera permission — click "Allow".</div>
+        </div>
+    </div>
+
     <div id="toastStack"></div>
 
     <!-- ═══ v10: Autocomplete Datalists ═══ -->
@@ -2184,7 +2206,7 @@
         // =====================================================================
         // CLOUD SYNC CONFIG  --  paste your deployed Apps Script Web App URL
         // =====================================================================
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxgQXhZ--8APaK6LqOFxv5vzOZmeqnwMBOuEVbPvjUh_WqpM9v5NM-KEKV5lgadbotB/exec";
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwupe5y7CyxAdeBR-ejczl5wpRgsCr27x1oZj1yeRv_py7xyvU3l5ypI4cTGlw_i0k8/exec";
         // =====================================================================
 
         // Two independent counters — one per Entry Type
@@ -2197,7 +2219,11 @@
 
         const MASTER_STORE_PIN = "1234";
         let IS_DIGITALLY_SIGNED = false;
+        let ENTRY_SAVED_SUCCESSFULLY = false; // v6: true once save completes — gates "view/print" modal after signature removal
         let SIGNATURE_TIMESTAMP = "";
+        let OVERALL_GST_PCT = 5;   // v6: weighted-average GST% across item rows
+        let INW_PHOTOS = [];       // v6: { dataUrl, name } — optional Inward entry photos
+        let OUT_PHOTOS = [];       // v6: { dataUrl, name } — optional Outward entry photos
         let SIGNATURE_IMAGE_DATA = "";
         let LAST_PDF_LINK = "";
         let LAST_PDF_LINK_TWOPAGE = "";
@@ -2294,7 +2320,6 @@
         document.getElementById('freightExp').addEventListener('input', function() {
             calculateBillingSummary();
         });
-        document.getElementById('globalGstRate').addEventListener('change', calculateBillingSummary);
         document.getElementById('partyState').addEventListener('change', calculateBillingSummary);
         document.getElementById('roundOffInput').addEventListener('input', calculateBillingSummary);
 
@@ -2774,6 +2799,7 @@
                     listPrice:   parseFloat(row.querySelector('.list-price-field').value) || 0,
                     discountPct: parseFloat(row.querySelector('.discount-field').value) || 0,
                     rate:        parseFloat(row.querySelector('.rate-field').value) || 0,
+                    gstPct:      parseFloat(row.querySelector('.item-gst-field')?.value) || 0,
                     total:       row.querySelector('.row-total-cell').innerText
                 });
             });
@@ -2783,7 +2809,9 @@
             const pdfHtmlTwoPage = buildBothCopiesPortraitDoc(
                 generateInvoiceHTML('ACCOUNT COPY'),
                 generateInvoiceHTML('SUPPLIER COPY'),
-                'Inward Two-Page'
+                'Inward Two-Page',
+                INW_PHOTOS,
+                'Inward No: ' + (document.getElementById('regEntryNo').value || '-')
             );
 
             return {
@@ -2803,7 +2831,7 @@
                 baseTotal:     num(document.getElementById('itemsBaseTotal').innerText),
                 freight:       parseFloat(document.getElementById('freightExp').value) || 0,
                 taxable:       num(document.getElementById('taxableAmount').innerText),
-                gstRate:       parseFloat(document.getElementById('globalGstRate').value) || 0,
+                gstRate:       OVERALL_GST_PCT || 0,
                 cgst:          num(document.getElementById('cgstAmount').innerText),
                 sgst:          num(document.getElementById('sgstAmount').innerText),
                 igst:          num(document.getElementById('igstAmount').innerText),
@@ -2816,6 +2844,7 @@
                 costOnYarn:    document.getElementById('calcCostOnYarn').value,
                 remarks:       (document.getElementById('inwRemarks').value || '').trim(),
                 signedAt:      SIGNATURE_TIMESTAMP,
+                photos:        INW_PHOTOS,
                 pdfHtml:        pdfHtmlSingle,    // legacy field — for backward compat
                 pdfHtmlSingle:  pdfHtmlSingle,
                 pdfHtmlTwoPage: pdfHtmlTwoPage
@@ -2947,16 +2976,83 @@
             }
         `;
 
+        // =====================================================================
+        // v6 — ATTACHED PHOTOS PAGE (embedded as extra page(s) in generated PDFs)
+        // Builds a print-ready A4-portrait gallery page from a photos array
+        // ({ dataUrl, name }). Returns '' if no photos — callers simply append
+        // the result, so PDFs without photos are completely unaffected.
+        // =====================================================================
+
+        const PHOTOS_PAGE_CSS = `
+            @page photos-page { size: A4 portrait; margin: 10mm; }
+            .photos-page {
+                page-break-before: always;
+                break-before: page;
+                page: photos-page;
+                width: 100%;
+                box-sizing: border-box;
+                font-family: Arial, 'Segoe UI', sans-serif;
+            }
+            .photos-page h3 {
+                margin: 0 0 4px; font-size: 16px; font-weight: 800; color: #0f172a;
+                border-bottom: 2px solid #0f172a; padding-bottom: 6px;
+            }
+            .photos-page .photos-meta {
+                font-size: 11px; color: #64748b; margin-bottom: 14px;
+            }
+            .photos-page .photos-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            .photos-page .photo-cell {
+                border: 1.5px solid #cbd5e1;
+                border-radius: 6px;
+                overflow: hidden;
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            .photos-page .photo-cell img {
+                width: 100%;
+                height: 85mm;
+                object-fit: cover;
+                display: block;
+            }
+            .photos-page .photo-cell .photo-label {
+                font-size: 10px; color: #475569; padding: 4px 8px;
+                background: #f8fafc; border-top: 1px solid #e2e8f0;
+            }
+        `;
+
+        function buildPhotosPageHtml(photosArray, entryLabel) {
+            if (!photosArray || !photosArray.length) return '';
+
+            const cells = photosArray.map(function(p, idx) {
+                return '<div class="photo-cell">' +
+                    '<img src="' + p.dataUrl + '" alt="Attached photo ' + (idx + 1) + '">' +
+                    '<div class="photo-label">Photo ' + (idx + 1) + ' of ' + photosArray.length + '</div>' +
+                '</div>';
+            }).join('');
+
+            return '<div class="photos-page">' +
+                '<h3>&#128247; Attached Photos</h3>' +
+                '<div class="photos-meta">' + (entryLabel || '') + ' &bull; ' + photosArray.length + ' photo(s)</div>' +
+                '<div class="photos-grid">' + cells + '</div>' +
+            '</div>';
+        }
+
         function buildLandscapePdfHtml() {
             const accountHtml  = generateInvoiceHTML('ACCOUNT COPY');
             const supplierHtml = generateInvoiceHTML('SUPPLIER COPY');
+            const photosHtml   = buildPhotosPageHtml(INW_PHOTOS, 'Inward No: ' + (document.getElementById('regEntryNo').value || '-'));
 
             return '<!DOCTYPE html><html><head><meta charset="utf-8">' +
-                   '<style>' + LANDSCAPE_PDF_CSS + '</style></head><body>' +
+                   '<style>' + LANDSCAPE_PDF_CSS + PHOTOS_PAGE_CSS + '</style></head><body>' +
                    '<table class="landscape-pair"><tbody><tr>' +
                    '<td>' + accountHtml + '</td>' +
                    '<td>' + supplierHtml + '</td>' +
                    '</tr></tbody></table>' +
+                   photosHtml +
                    '</body></html>';
         }
 
@@ -3014,22 +3110,27 @@
             .single-wrap .inv-print-freight-box.full-width { margin-bottom: 0 !important; }
         `;
 
-        function buildSingleCopyDoc(copyHtml, title) {
+        function buildSingleCopyDoc(copyHtml, title, photosArray, entryLabel) {
+            const photosHtml = buildPhotosPageHtml(photosArray, entryLabel);
             return '<!DOCTYPE html><html><head><meta charset="utf-8">' +
                    '<title>' + (title || 'Slip') + '</title>' +
-                   '<style>' + LANDSCAPE_PDF_CSS + PORTRAIT_SINGLE_CSS + '</style></head><body>' +
+                   '<style>' + LANDSCAPE_PDF_CSS + PORTRAIT_SINGLE_CSS + PHOTOS_PAGE_CSS + '</style></head><body>' +
                    '<div class="single-wrap">' + copyHtml + '</div>' +
+                   photosHtml +
                    '</body></html>';
         }
 
-        function buildBothCopiesPortraitDoc(copy1Html, copy2Html, title) {
+        function buildBothCopiesPortraitDoc(copy1Html, copy2Html, title, photosArray, entryLabel) {
+            const photosHtml = buildPhotosPageHtml(photosArray, entryLabel);
             return '<!DOCTYPE html><html><head><meta charset="utf-8">' +
                    '<title>' + (title || 'Slip') + '</title>' +
-                   '<style>' + LANDSCAPE_PDF_CSS + PORTRAIT_SINGLE_CSS + '</style></head><body>' +
+                   '<style>' + LANDSCAPE_PDF_CSS + PORTRAIT_SINGLE_CSS + PHOTOS_PAGE_CSS + '</style></head><body>' +
                    '<div class="single-wrap">' + copy1Html + '</div>' +
                    '<div class="single-wrap">' + copy2Html + '</div>' +
+                   photosHtml +
                    '</body></html>';
         }
+
 
         // Print a complete HTML document via a hidden iframe.
         // Guarantees the printed output uses the document's own inline CSS
@@ -3092,7 +3193,7 @@
 
             let digitalStampHtml = `
                 <div class="sig-blank-space"></div>
-                <div class="sig-line" style="border-top: 1px solid red; color:red;">PENDING SIGNATURE</div>
+                <div class="sig-line">Store In-Charge</div>
             `;
             if (IS_DIGITALLY_SIGNED && SIGNATURE_IMAGE_DATA) {
                 digitalStampHtml = `
@@ -3120,10 +3221,6 @@
                     <div class="sig-box">
                         <div class="sig-blank-space"></div>
                         <div class="sig-line">GM Sign</div>
-                    </div>
-                    <div class="sig-box">
-                        <div class="sig-blank-space"></div>
-                        <div class="sig-line">Sender Sign</div>
                     </div>
                     <div class="sig-box">
                         <div class="sig-blank-space"></div>
@@ -3389,11 +3486,18 @@
                 <td><input type="number" class="table-input list-price-field" value="0" min="0"></td>
                 <td><input type="number" class="table-input discount-field" value="0" min="0" max="100" step="0.01" placeholder="%"></td>
                 <td><input type="number" class="table-input rate-field" value="0" disabled></td>
+                <td><select class="table-input chip-select item-gst-field">
+                        <option value="5" selected>5%</option>
+                        <option value="12">12%</option>
+                        <option value="18">18%</option>
+                        <option value="28">28%</option>
+                        <option value="0">0%</option>
+                    </select></td>
                 <td class="row-total-cell" style="font-weight:700; text-align:right; padding-right:5px;">&#8377;0.00</td>
                 <td><button class="delete-btn">&#10005;</button></td>
             `;
 
-            const inputs = tr.querySelectorAll('.qty-field, .weight-field, .list-price-field, .discount-field, .bill-basis-field');
+            const inputs = tr.querySelectorAll('.qty-field, .weight-field, .list-price-field, .discount-field, .bill-basis-field, .item-gst-field');
             inputs.forEach(i => {
                 i.addEventListener('input', () => calculateRowTotal(tr));
                 if(i.tagName === 'SELECT') i.addEventListener('change', () => calculateRowTotal(tr));
@@ -3429,12 +3533,17 @@
             let total = 0;
             let totalQty = 0;
             let totalWt  = 0;
+            let gstWeightedSum = 0;   // sum of (item_total × item_gst%)
             const rows = document.querySelectorAll('#itemTableBody tr');
             rows.forEach(row => {
                 totalQty += parseFloat(row.querySelector('.qty-field')?.value) || 0;
                 totalWt  += parseFloat(row.querySelector('.weight-field')?.value) || 0;
                 const cell = row.querySelector('.row-total-cell');
-                if (cell) total += parseFloat(cell.innerText.replace(/[^0-9.-]+/g, "")) || 0;
+                const rowAmt = cell ? (parseFloat(cell.innerText.replace(/[^0-9.-]+/g, "")) || 0) : 0;
+                total += rowAmt;
+                const gstField = row.querySelector('.item-gst-field');
+                const itemGst  = gstField ? (parseFloat(gstField.value) || 0) : 0;
+                gstWeightedSum += rowAmt * itemGst;
             });
             document.getElementById('itemsBaseTotal').innerText = formatter.format(total);
 
@@ -3443,6 +3552,14 @@
             document.getElementById('inwTotalQty').innerText    = totalQty.toLocaleString('en-IN');
             document.getElementById('inwTotalWeight').innerText = totalWt.toFixed(2);
             document.getElementById('inwTotalAmount').innerText = formatter.format(total);
+
+            // ── v6: Weighted-average GST% across all items (item-wise GST) ──
+            const weightedGstPct = (total > 0) ? (gstWeightedSum / total) : 0;
+            OVERALL_GST_PCT = weightedGstPct;
+            const gstDisplayEl = document.getElementById('overallGstDisplay');
+            if (gstDisplayEl) {
+                gstDisplayEl.innerText = (weightedGstPct % 1 === 0 ? weightedGstPct : weightedGstPct.toFixed(2)) + '%';
+            }
 
             calculateFreightData();
         }
@@ -3479,43 +3596,45 @@
             let taxableAmount = baseTotal + freight;
             document.getElementById('taxableAmount').innerText = formatter.format(taxableAmount);
 
-            let selectedGst = parseFloat(document.getElementById('globalGstRate').value) || 0;
+            // ── v6: Item-wise GST — use weighted-average % computed in calculateGrandTotal ──
+            let selectedGst = OVERALL_GST_PCT || 0;
             let isLocal = document.getElementById('partyState').value.includes("HARYANA") || document.getElementById('partyState').value.includes("LOCAL");
 
+            // Internal CGST/SGST/IGST split — kept for sheet/record accuracy,
+            // NOT shown in UI or PDF (only "Total Applied Tax" is shown there).
             let cgst = 0, sgst = 0, igst = 0;
-
-            if (selectedGst === 0) {
-                document.getElementById('cgstLabel').innerText = `CGST (0%)`;
-                document.getElementById('sgstLabel').innerText = `SGST (0%)`;
-                document.getElementById('igstLabel').innerText = `IGST (0%)`;
-            } else if (isLocal) {
-                let half = selectedGst / 2;
-                document.getElementById('cgstLabel').innerText = `CGST (${half}%)`;
-                document.getElementById('sgstLabel').innerText = `SGST (${half}%)`;
-                document.getElementById('igstLabel').innerText = `IGST (0%)`;
-                cgst = sgst = (taxableAmount * half) / 100;
-            } else {
-                document.getElementById('cgstLabel').innerText = `CGST (0%)`;
-                document.getElementById('sgstLabel').innerText = `SGST (0%)`;
-                document.getElementById('igstLabel').innerText = `IGST (${selectedGst}%)`;
-                igst = (taxableAmount * selectedGst) / 100;
+            if (selectedGst > 0) {
+                if (isLocal) {
+                    let half = selectedGst / 2;
+                    cgst = sgst = (taxableAmount * half) / 100;
+                } else {
+                    igst = (taxableAmount * selectedGst) / 100;
+                }
             }
 
             let totalTax = cgst + sgst + igst;
             let roundOff = parseFloat(document.getElementById('roundOffInput').value) || 0;
             let finalAmt = taxableAmount + totalTax + roundOff;
 
+            // Hidden fields — still populated for sheet record / Excel export accuracy
             document.getElementById('cgstAmount').innerText = formatter.format(cgst);
             document.getElementById('sgstAmount').innerText = formatter.format(sgst);
             document.getElementById('igstAmount').innerText = formatter.format(igst);
             document.getElementById('totalTaxAmount').innerText = formatter.format(totalTax);
             document.getElementById('finalAmount').innerText = formatter.format(finalAmt);
             document.getElementById('netValuationText').innerText = formatter.format(finalAmt);
+
+            // Visible "Total Applied Tax" label with overall GST%
+            const appliedTaxLabel = document.getElementById('appliedTaxLabel');
+            if (appliedTaxLabel) {
+                const pctTxt = (selectedGst % 1 === 0 ? selectedGst : selectedGst.toFixed(2));
+                appliedTaxLabel.innerText = 'Total Applied Tax (' + pctTxt + '% GST)';
+            }
         }
 
         function generateInvoiceHTML(copyTitle) {
             const inwardNo = document.getElementById('regEntryNo').value;
-            const recDate = document.getElementById('receivingDate').value || '-';
+            const recDate = formatInvoiceDate(document.getElementById('receivingDate').value) || '-';
             const poNum = document.getElementById('poNumber').value || '-';
             const gatePass    = (document.getElementById('gatePassNo').value || '').trim();
             const lotNumber   = (document.getElementById('lotNo').value || '').trim();
@@ -3529,9 +3648,7 @@
             const baseTot = document.getElementById('itemsBaseTotal').innerText;
             const freight = formatter.format(parseFloat(document.getElementById('freightExp').value) || 0);
             const taxable = document.getElementById('taxableAmount').innerText;
-            const cgstTxt = document.getElementById('cgstLabel').innerText + " : " + document.getElementById('cgstAmount').innerText;
-            const sgstTxt = document.getElementById('sgstLabel').innerText + " : " + document.getElementById('sgstAmount').innerText;
-            const igstTxt = document.getElementById('igstLabel').innerText + " : " + document.getElementById('igstAmount').innerText;
+            const overallGstTxt = (OVERALL_GST_PCT % 1 === 0 ? OVERALL_GST_PCT : OVERALL_GST_PCT.toFixed(2));
             const totalTax = document.getElementById('totalTaxAmount').innerText;
             const roundOffVal = parseFloat(document.getElementById('roundOffInput').value) || 0;
             const finalAmt = document.getElementById('finalAmount').innerText;
@@ -3608,7 +3725,7 @@
 
             let digitalStampHtml = `
                 <div class="sig-blank-space"></div>
-                <div class="sig-line" style="border-top: 1px solid red; color:red;">PENDING SIGNATURE</div>
+                <div class="sig-line">Store In-Charge</div>
             `;
             if(IS_DIGITALLY_SIGNED && SIGNATURE_IMAGE_DATA) {
                 digitalStampHtml = `
@@ -3681,10 +3798,7 @@
                             <tr><td>Items Base Total:</td><td style="text-align:right;">${baseTot}</td></tr>
                             <tr><td>Freight Expenses (+):</td><td style="text-align:right;">${freight}</td></tr>
                             <tr><td>Taxable Value:</td><td style="text-align:right; font-weight:700;">${taxable}</td></tr>
-                            <tr><td style="font-size:11px; color:#444;">${cgstTxt.split(':')[0]}</td><td style="text-align:right; font-size:11px;">${cgstTxt.split(':')[1] || '&#8377;0.00'}</td></tr>
-                            <tr><td style="font-size:11px; color:#444;">${sgstTxt.split(':')[0]}</td><td style="text-align:right; font-size:11px;">${sgstTxt.split(':')[1] || '&#8377;0.00'}</td></tr>
-                            <tr><td style="font-size:11px; color:#444;">${igstTxt.split(':')[0]}</td><td style="text-align:right; font-size:11px;">${igstTxt.split(':')[1] || '&#8377;0.00'}</td></tr>
-                            <tr><td>Total Applied Tax:</td><td style="text-align:right;">${totalTax}</td></tr>
+                            <tr><td>Total Applied Tax (${overallGstTxt}% GST):</td><td style="text-align:right;">${totalTax}</td></tr>
                             <tr><td>Round off. (+/-):</td><td style="text-align:right; font-weight:600;">${formatter.format(roundOffVal)}</td></tr>
                             <tr class="grand-row"><td>FINAL NET AMOUNT:</td><td style="text-align:right;">${finalAmt}</td></tr>
                         </table>
@@ -3726,7 +3840,7 @@
         }
 
         function buildAndShowInvoiceModal() {
-            if(!IS_DIGITALLY_SIGNED) return;
+            if(!ENTRY_SAVED_SUCCESSFULLY) return;
             const previewArea = document.getElementById('modalPreviewArea');
             const modalBox = document.querySelector('.print-modal-box');
 
@@ -3742,7 +3856,7 @@
         }
 
         function triggerSystemPrint(targetType) {
-            if(!IS_DIGITALLY_SIGNED) return;
+            if(!ENTRY_SAVED_SUCCESSFULLY) return;
 
             // Route to outward variant if active context is OUTWARD
             if (CURRENT_SUBMIT_CONTEXT === 'OUTWARD') {
@@ -3759,13 +3873,15 @@
 
             let html;
             if (targetType === 'ACCOUNT COPY') {
-                html = buildSingleCopyDoc(generateInvoiceHTML('ACCOUNT COPY'), fileName);
+                html = buildSingleCopyDoc(generateInvoiceHTML('ACCOUNT COPY'), fileName, INW_PHOTOS, fileName);
             } else if (targetType === 'SUPPLIER COPY') {
-                html = buildSingleCopyDoc(generateInvoiceHTML('SUPPLIER COPY'), fileName);
+                html = buildSingleCopyDoc(generateInvoiceHTML('SUPPLIER COPY'), fileName, INW_PHOTOS, fileName);
             } else if (targetType === 'BOTH') {
                 html = buildBothCopiesPortraitDoc(
                     generateInvoiceHTML('ACCOUNT COPY'),
                     generateInvoiceHTML('SUPPLIER COPY'),
+                    fileName,
+                    INW_PHOTOS,
                     fileName
                 );
             } else if (targetType === 'LANDSCAPE_BOTH') {
@@ -3777,7 +3893,7 @@
 
         // ---------- OUTWARD: print modal + print orchestration ----------
         function triggerOutwardPrint(targetType) {
-            if(!IS_DIGITALLY_SIGNED) return;
+            if(!ENTRY_SAVED_SUCCESSFULLY) return;
 
             const items     = LAST_OUTWARD_ITEMS || [];
             const entryType = LAST_OUTWARD_ENTRY_TYPE || 'OUTWARD';
@@ -3792,13 +3908,15 @@
 
             let html;
             if (targetType === 'ACCOUNT COPY') {
-                html = buildSingleCopyDoc(generateOutwardCopyHTML('ACCOUNT COPY', items, entryType), fileName);
+                html = buildSingleCopyDoc(generateOutwardCopyHTML('ACCOUNT COPY', items, entryType), fileName, OUT_PHOTOS, fileName);
             } else if (targetType === 'RECEIVER COPY') {
-                html = buildSingleCopyDoc(generateOutwardCopyHTML('RECEIVER COPY', items, entryType), fileName);
+                html = buildSingleCopyDoc(generateOutwardCopyHTML('RECEIVER COPY', items, entryType), fileName, OUT_PHOTOS, fileName);
             } else if (targetType === 'BOTH') {
                 html = buildBothCopiesPortraitDoc(
                     generateOutwardCopyHTML('ACCOUNT COPY', items, entryType),
                     generateOutwardCopyHTML('RECEIVER COPY', items, entryType),
+                    fileName,
+                    OUT_PHOTOS,
                     fileName
                 );
             } else if (targetType === 'LANDSCAPE_BOTH') {
@@ -3819,7 +3937,7 @@
         }
 
         function buildAndShowOutwardModal() {
-            if (!IS_DIGITALLY_SIGNED) return;
+            if (!ENTRY_SAVED_SUCCESSFULLY) return;
             const previewArea = document.getElementById('modalPreviewArea');
             const modalBox = document.querySelector('.print-modal-box');
 
@@ -3924,7 +4042,7 @@
         let CURRENT_SUBMIT_CONTEXT = "INWARD";
 
         const OUTWARD_NATURE_OPTIONS = {
-            "OUTWARD": ["Repair", "Transfer", "Non-Returnable", "Sample"],
+            "OUTWARD": ["Repair", "Transfer", "Non-Returnable"],
             "ISSUE":   ["Consumable", "Temporary Use"]
         };
         const OUTWARD_MODE_LABEL = {
@@ -4134,12 +4252,15 @@
                 lotNo:             (document.getElementById('outLotNo').value || '').trim(),
                 signedAt:          SIGNATURE_TIMESTAMP,
                 signatureImage:    SIGNATURE_IMAGE_DATA,
+                photos:            OUT_PHOTOS,
                 pdfHtml:           buildOutwardSlipHtml(items, entryType),  // legacy
                 pdfHtmlSingle:     buildOutwardSlipHtml(items, entryType),
                 pdfHtmlTwoPage:    buildBothCopiesPortraitDoc(
                     generateOutwardCopyHTML('ACCOUNT COPY',  items, entryType),
                     generateOutwardCopyHTML('RECEIVER COPY', items, entryType),
-                    'Outward Two-Page'
+                    'Outward Two-Page',
+                    OUT_PHOTOS,
+                    'Outward No: ' + (document.getElementById('outRegEntryNo').value || '-')
                 )
             };
         }
@@ -4150,13 +4271,15 @@
 
             const accountHtml  = generateOutwardCopyHTML('ACCOUNT COPY', items, entryType);
             const receiverHtml = generateOutwardCopyHTML('RECEIVER COPY', items, entryType);
+            const photosHtml   = buildPhotosPageHtml(OUT_PHOTOS, 'Outward No: ' + (document.getElementById('outRegEntryNo').value || '-'));
 
             return '<!DOCTYPE html><html><head><meta charset="utf-8">' +
-                   '<style>' + LANDSCAPE_PDF_CSS + '</style></head><body>' +
+                   '<style>' + LANDSCAPE_PDF_CSS + PHOTOS_PAGE_CSS + '</style></head><body>' +
                    '<table class="landscape-pair"><tbody><tr>' +
                    '<td>' + accountHtml + '</td>' +
                    '<td>' + receiverHtml + '</td>' +
                    '</tr></tbody></table>' +
+                   photosHtml +
                    '</body></html>';
         }
 
@@ -4194,6 +4317,7 @@
                 LAST_SAVED_ROW        = LAST_OUT_SAVED_ROW;
                 LAST_OUTWARD_ITEMS      = payload.items || [];
                 LAST_OUTWARD_ENTRY_TYPE = payload.entryType || 'OUTWARD';
+                ENTRY_SAVED_SUCCESSFULLY = true;
 
                 showToast('&#9989; Outward saved (Row ' + LAST_OUT_SAVED_ROW + ', ' + (result.itemsCount || LAST_OUTWARD_ITEMS.length) + ' item' + ((result.itemsCount || LAST_OUTWARD_ITEMS.length) > 1 ? 's' : '') + ') &amp; PDF uploaded to Drive.', 'success', 6000);
 
@@ -4221,6 +4345,9 @@
             // Clear items table & re-add one blank row
             document.getElementById('outwardItemTableBody').innerHTML = '';
             addOutwardItemRow();
+            // v6: Clear attached photos
+            clearPhotos('OUTWARD');
+            ENTRY_SAVED_SUCCESSFULLY = false;
         }
 
         function resetInwardForm() {
@@ -4236,10 +4363,12 @@
             document.getElementById('roundOffInput').value = 0;
             document.getElementById('calcGrossWeight').value = 0;
             document.getElementById('calcFreightRate').value = 0;
-            document.getElementById('globalGstRate').value   = '5';  // default 5% GST
             // Clear items table & re-add one blank row
             document.getElementById('itemTableBody').innerHTML = '';
             addNewRow();
+            // v6: Clear attached photos
+            clearPhotos('INWARD');
+            ENTRY_SAVED_SUCCESSFULLY = false;
             // Recalculate everything
             calculateFreightData();
             calculateBillingSummary();
@@ -5198,7 +5327,7 @@
             const SKIP_TYPES = new Set(['password', 'number', 'date', 'email', 'tel', 'color', 'range', 'checkbox', 'radio', 'file', 'hidden', 'submit', 'button', 'reset', 'search', 'url']);
             const SKIP_IDS   = new Set([
                 'signaturePinInput','pwdGateInput',  // password fields
-                'globalGstRate','partyState','entryTypeSelect', // dropdowns (selects handled separately)
+                'partyState','entryTypeSelect', // dropdowns (selects handled separately)
                 'receivingDate','invoiceDate','outDate','outTargetReturnDate', // date inputs
                 'freightExp','roundOffInput','calcGrossWeight','calcFreightRate', // number inputs
                 'serialNoField','regEntryNo','outRegEntryNo', // auto-generated (disabled)
@@ -5390,6 +5519,7 @@
                 LAST_PDF_LINK         = result.pdfLinkSingle  || result.pdfLink || "";
                 LAST_PDF_LINK_TWOPAGE = result.pdfLinkTwoPage || "";
                 LAST_SAVED_ROW        = result.savedRow || "";
+                ENTRY_SAVED_SUCCESSFULLY = true;
                 showToast(
                     '&#9989; Saved to Sheet (Row ' + LAST_SAVED_ROW + ', ' +
                     (result.itemsCount || 1) + ' item' + ((result.itemsCount || 1) > 1 ? 's' : '') +
@@ -6043,6 +6173,219 @@
 
 
 
+
+        // =====================================================================
+        // v6 — OPTIONAL MULTI-PHOTO UPLOAD (Inward + Outward)
+        // Compresses images client-side (resize + JPEG re-encode) before
+        // converting to base64, to keep the POST payload small & fast.
+        // =====================================================================
+
+        const PHOTO_MAX_DIMENSION = 1280;   // px — long edge resize target
+        const PHOTO_JPEG_QUALITY  = 0.72;   // 0-1
+
+        function compressImageFile(file) {
+            return new Promise(function(resolve, reject) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        let w = img.width, h = img.height;
+                        if (w > PHOTO_MAX_DIMENSION || h > PHOTO_MAX_DIMENSION) {
+                            if (w >= h) { h = Math.round(h * (PHOTO_MAX_DIMENSION / w)); w = PHOTO_MAX_DIMENSION; }
+                            else        { w = Math.round(w * (PHOTO_MAX_DIMENSION / h)); h = PHOTO_MAX_DIMENSION; }
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w; canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        const dataUrl = canvas.toDataURL('image/jpeg', PHOTO_JPEG_QUALITY);
+                        resolve({ dataUrl: dataUrl, name: file.name });
+                    };
+                    img.onerror = function() { reject(new Error('Could not load image: ' + file.name)); };
+                    img.src = e.target.result;
+                };
+                reader.onerror = function() { reject(new Error('Could not read file: ' + file.name)); };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function handlePhotoSelect(fileInput, photosArray, previewElId, countElId) {
+            const files = Array.from(fileInput.files || []);
+            if (!files.length) return;
+
+            const countEl = document.getElementById(countElId);
+            if (countEl) countEl.innerText = 'Processing ' + files.length + ' photo(s)...';
+
+            for (const file of files) {
+                if (!file.type.startsWith('image/')) continue;
+                try {
+                    const compressed = await compressImageFile(file);
+                    photosArray.push(compressed);
+                } catch (err) {
+                    showToast('&#9888; Could not process ' + esc(file.name) + ': ' + err.message, 'warn', 4000);
+                }
+            }
+
+            fileInput.value = ''; // allow re-selecting the same file later
+            renderPhotoPreview(photosArray, previewElId, countElId);
+        }
+
+        function renderPhotoPreview(photosArray, previewElId, countElId) {
+            const previewEl = document.getElementById(previewElId);
+            const countEl   = document.getElementById(countElId);
+            if (countEl) {
+                countEl.innerText = photosArray.length > 0
+                    ? photosArray.length + ' photo(s) attached'
+                    : '';
+            }
+            if (!previewEl) return;
+            previewEl.innerHTML = photosArray.map(function(p, idx) {
+                return '<div style="position:relative; width:64px; height:64px;">' +
+                    '<img src="' + p.dataUrl + '" style="width:100%; height:100%; object-fit:cover; border-radius:6px; border:1.5px solid #e2e8f0;">' +
+                    '<button type="button" onclick="removePhotoAt(' + idx + ', \'' + previewElId + '\', \'' + countElId + '\')" ' +
+                    'style="position:absolute; top:-6px; right:-6px; width:18px; height:18px; border-radius:50%; background:#dc2626; color:#fff; border:1.5px solid #fff; font-size:10px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; font-weight:700;">&#10005;</button>' +
+                '</div>';
+            }).join('');
+        }
+
+        function removePhotoAt(idx, previewElId, countElId) {
+            const arr = (previewElId === 'inwPhotoPreview') ? INW_PHOTOS : OUT_PHOTOS;
+            arr.splice(idx, 1);
+            renderPhotoPreview(arr, previewElId, countElId);
+        }
+
+        function clearPhotos(which) {
+            if (which === 'INWARD') { INW_PHOTOS = []; renderPhotoPreview(INW_PHOTOS, 'inwPhotoPreview', 'inwPhotoCount'); }
+            if (which === 'OUTWARD') { OUT_PHOTOS = []; renderPhotoPreview(OUT_PHOTOS, 'outPhotoPreview', 'outPhotoCount'); }
+        }
+
+        // =====================================================================
+        // v6 — WEBCAM CAPTURE (Desktop/Laptop) via getUserMedia()
+        // Opens a live preview modal; "Capture Photo" takes a snapshot and
+        // pushes it into the same INW_PHOTOS / OUT_PHOTOS array used by the
+        // file-picker flow, then auto-compresses it the same way.
+        // =====================================================================
+
+        let WEBCAM_STREAM = null;
+        let WEBCAM_TARGET = null; // 'INWARD' or 'OUTWARD'
+
+        async function openWebcamModal(target) {
+            WEBCAM_TARGET = target;
+            const modal     = document.getElementById('webcamModal');
+            const video     = document.getElementById('webcamVideo');
+            const statusEl  = document.getElementById('webcamStatusText');
+            const errorBox  = document.getElementById('webcamErrorBox');
+            const captureBtn= document.getElementById('webcamCaptureBtn');
+
+            errorBox.style.display = 'none';
+            statusEl.innerText = 'Starting camera...';
+            captureBtn.disabled = true;
+            modal.style.display = 'flex';
+
+            try {
+                WEBCAM_STREAM = await navigator.mediaDevices.getUserMedia({
+                    video: { width: { ideal: 1280 }, height: { ideal: 960 } },
+                    audio: false
+                });
+                video.srcObject = WEBCAM_STREAM;
+                statusEl.innerText = 'Camera ready — click Capture Photo';
+                captureBtn.disabled = false;
+            } catch (err) {
+                let msg = 'Could not access webcam.';
+                if (err.name === 'NotAllowedError')      msg = 'Camera permission denied. Click the camera icon in the address bar to allow.';
+                else if (err.name === 'NotFoundError')    msg = 'No webcam found on this device.';
+                else if (err.name === 'NotReadableError') msg = 'Webcam is already in use by another app.';
+                statusEl.innerText = 'Camera unavailable';
+                errorBox.innerText = msg;
+                errorBox.style.display = 'block';
+            }
+        }
+
+        function closeWebcamModal() {
+            if (WEBCAM_STREAM) {
+                WEBCAM_STREAM.getTracks().forEach(function(track) { track.stop(); });
+                WEBCAM_STREAM = null;
+            }
+            document.getElementById('webcamVideo').srcObject = null;
+            document.getElementById('webcamModal').style.display = 'none';
+            WEBCAM_TARGET = null;
+        }
+
+        function captureWebcamPhoto() {
+            const video  = document.getElementById('webcamVideo');
+            const canvas = document.getElementById('webcamCanvas');
+            if (!video.videoWidth) return;
+
+            canvas.width  = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Resize/compress the same way as compressImageFile()
+            let w = canvas.width, h = canvas.height;
+            if (w > PHOTO_MAX_DIMENSION || h > PHOTO_MAX_DIMENSION) {
+                if (w >= h) { h = Math.round(h * (PHOTO_MAX_DIMENSION / w)); w = PHOTO_MAX_DIMENSION; }
+                else        { w = Math.round(w * (PHOTO_MAX_DIMENSION / h)); h = PHOTO_MAX_DIMENSION; }
+                const small = document.createElement('canvas');
+                small.width = w; small.height = h;
+                small.getContext('2d').drawImage(canvas, 0, 0, w, h);
+                var dataUrl = small.toDataURL('image/jpeg', PHOTO_JPEG_QUALITY);
+            } else {
+                var dataUrl = canvas.toDataURL('image/jpeg', PHOTO_JPEG_QUALITY);
+            }
+
+            const photo = { dataUrl: dataUrl, name: 'webcam_' + Date.now() + '.jpg' };
+
+            if (WEBCAM_TARGET === 'INWARD') {
+                INW_PHOTOS.push(photo);
+                renderPhotoPreview(INW_PHOTOS, 'inwPhotoPreview', 'inwPhotoCount');
+            } else if (WEBCAM_TARGET === 'OUTWARD') {
+                OUT_PHOTOS.push(photo);
+                renderPhotoPreview(OUT_PHOTOS, 'outPhotoPreview', 'outPhotoCount');
+            }
+
+            showToast('&#9989; Photo captured from webcam.', 'success', 2500);
+            closeWebcamModal();
+        }
+
+        // v6: Camera (single shot) + Gallery (multi-select) — both feed the same array
+        document.getElementById('inwPhotoCameraInput').addEventListener('change', function() {
+            handlePhotoSelect(this, INW_PHOTOS, 'inwPhotoPreview', 'inwPhotoCount');
+        });
+        document.getElementById('inwPhotoGalleryInput').addEventListener('change', function() {
+            handlePhotoSelect(this, INW_PHOTOS, 'inwPhotoPreview', 'inwPhotoCount');
+        });
+        document.getElementById('outPhotoCameraInput').addEventListener('change', function() {
+            handlePhotoSelect(this, OUT_PHOTOS, 'outPhotoPreview', 'outPhotoCount');
+        });
+        document.getElementById('outPhotoGalleryInput').addEventListener('change', function() {
+            handlePhotoSelect(this, OUT_PHOTOS, 'outPhotoPreview', 'outPhotoCount');
+        });
+
+        // v6: On mobile/tablet → show native "Take Photo" (capture=environment).
+        // On desktop/laptop → hide that (meaningless there) and show "Use Webcam"
+        // instead, which opens a live getUserMedia() preview + snapshot capture.
+        (function() {
+            const isMobileOrTablet = /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent)
+                || (navigator.maxTouchPoints && navigator.maxTouchPoints > 1 && /Mac/i.test(navigator.platform)); // iPadOS
+            const hasWebcamApi = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+
+            const ic = document.getElementById('inwCameraBtnLabel');
+            const oc = document.getElementById('outCameraBtnLabel');
+            const iw = document.getElementById('inwWebcamBtnLabel');
+            const ow = document.getElementById('outWebcamBtnLabel');
+
+            if (!isMobileOrTablet) {
+                if (ic) ic.style.display = 'none';
+                if (oc) oc.style.display = 'none';
+                if (hasWebcamApi) {
+                    if (iw) iw.style.display = 'inline-flex';
+                    if (ow) ow.style.display = 'inline-flex';
+                }
+            }
+        })();
+
+
         // =====================================================================
         // ENTRY SUMMARY REVIEW MODAL — shown before signature, for both
         // Inward (all entry types) and Outward (all entry types).
@@ -6066,9 +6409,12 @@
 
         function proceedFromEntrySummary() {
             document.getElementById('entrySummaryModal').style.display = 'none';
-            document.getElementById('signaturePinInput').value = '';
-            document.getElementById('pinErrorMsg').style.display = 'none';
-            document.getElementById('secureSignatureModal').style.display = 'flex';
+            // Digital signature step removed — proceed directly to save.
+            // PDF retains a blank "Store In-Charge" sign line for manual signing.
+            IS_DIGITALLY_SIGNED = false;
+            SIGNATURE_IMAGE_DATA = null;
+            SIGNATURE_TIMESTAMP = '';
+            dispatchAfterSign();
         }
 
         // ── Build Inward summary (reads form directly, no PDF generation) ──
@@ -6089,6 +6435,7 @@
                 const wunit = row.querySelector('.item-wunit').value || '';
                 const rate  = row.querySelector('.rate-field').value || '0';
                 const disc  = parseFloat(row.querySelector('.discount-field').value) || 0;
+                const gst   = parseFloat(row.querySelector('.item-gst-field')?.value) || 0;
                 const tot   = row.querySelector('.row-total-cell').innerText;
                 rows += '<tr>' +
                     '<td style="padding:4px 6px;text-align:center;">' + (i+1) + '</td>' +
@@ -6096,10 +6443,11 @@
                     '<td style="padding:4px 6px;text-align:center;">' + qty + ' ' + esc(uom) + '</td>' +
                     '<td style="padding:4px 6px;text-align:center;">' + weight + ' ' + esc(wunit) + '</td>' +
                     '<td style="padding:4px 6px;text-align:right;">&#8377;' + parseFloat(rate).toFixed(2) + (disc>0 ? ' <small style="color:#64748b">(' + (disc%1===0?disc:disc.toFixed(2)) + '%)</small>' : '') + '</td>' +
+                    '<td style="padding:4px 6px;text-align:center;color:#0284c7;font-weight:700;">' + (gst%1===0?gst:gst.toFixed(2)) + '%</td>' +
                     '<td style="padding:4px 6px;text-align:right;font-weight:700;">' + tot + '</td>' +
                 '</tr>';
             });
-            if (!rows) rows = '<tr><td colspan="6" style="text-align:center;padding:14px;color:#94a3b8;">No items added.</td></tr>';
+            if (!rows) rows = '<tr><td colspan="7" style="text-align:center;padding:14px;color:#94a3b8;">No items added.</td></tr>';
 
             const gatePass    = (document.getElementById('gatePassNo').value || '').trim();
             const lotNumber   = (document.getElementById('lotNo').value || '').trim();
@@ -6120,7 +6468,7 @@
                     ['Invoice Number', esc(document.getElementById('invoiceNumber').value) || '<span style="color:#94a3b8">—</span>'],
                     ['Invoice Date', esc(formatInvoiceDate(document.getElementById('invoiceDate').value))],
                     ['PO Reference', esc(document.getElementById('poNumber').value) || '<span style="color:#94a3b8">—</span>'],
-                    ['GST %', esc(document.getElementById('globalGstRate').value) + '%'],
+                    ['GST %', (OVERALL_GST_PCT % 1 === 0 ? OVERALL_GST_PCT : OVERALL_GST_PCT.toFixed(2)) + '% (item-wise weighted)'],
                     ['Final Amount', '<strong style="color:#047857;font-size:14px;">' + document.getElementById('finalAmount').innerText + '</strong>'],
                     ['Remarks', esc(document.getElementById('inwRemarks').value) || '<span style="color:#94a3b8">—</span>']
                 ]) +
@@ -6128,9 +6476,9 @@
             '<div style="font-size:12px;font-weight:700;color:#0f172a;margin-bottom:6px;text-transform:uppercase;">Items (' + document.querySelectorAll('#itemTableBody tr').length + ')</div>' +
             '<table style="width:100%;border-collapse:collapse;font-size:11px;border:1px solid #e2e8f0;">' +
                 '<thead><tr style="background:#0f172a;color:#fff;">' +
-                    '<th style="padding:6px;width:5%;">Sr</th><th style="padding:6px;text-align:left;width:33%;">Item</th>' +
-                    '<th style="padding:6px;width:14%;">Qty</th><th style="padding:6px;width:14%;">Weight</th>' +
-                    '<th style="padding:6px;width:17%;">Rate</th><th style="padding:6px;width:17%;">Total</th>' +
+                    '<th style="padding:6px;width:5%;">Sr</th><th style="padding:6px;text-align:left;width:28%;">Item</th>' +
+                    '<th style="padding:6px;width:13%;">Qty</th><th style="padding:6px;width:13%;">Weight</th>' +
+                    '<th style="padding:6px;width:15%;">Rate</th><th style="padding:6px;width:11%;">GST%</th><th style="padding:6px;width:15%;">Total</th>' +
                 '</tr></thead><tbody>' + rows + '</tbody></table>' +
             '<div style="display:flex;justify-content:flex-end;margin-top:10px;">' +
                 '<table style="font-size:11px;border-collapse:collapse;min-width:260px;">' +
@@ -6139,7 +6487,12 @@
                     '<tr><td style="padding:3px 8px;color:#64748b;">Taxable Value</td><td style="padding:3px 8px;text-align:right;border:1px solid #e2e8f0;font-weight:700;">' + document.getElementById('taxableAmount').innerText + '</td></tr>' +
                     '<tr><td style="padding:3px 8px;color:#64748b;">Total Tax</td><td style="padding:3px 8px;text-align:right;border:1px solid #e2e8f0;">' + document.getElementById('totalTaxAmount').innerText + '</td></tr>' +
                     '<tr style="background:#f1f5f9;"><td style="padding:5px 8px;font-weight:800;border-top:2px solid #0f172a;color:#047857;">FINAL AMOUNT</td><td style="padding:5px 8px;text-align:right;font-weight:800;font-size:14px;border-top:2px solid #0f172a;color:#047857;border:1px solid #e2e8f0;">' + document.getElementById('finalAmount').innerText + '</td></tr>' +
-                '</table></div>';
+                '</table></div>' +
+            (INW_PHOTOS.length > 0 ?
+                '<div style="margin-top:14px;"><div style="font-size:11px;font-weight:700;color:#0f172a;margin-bottom:6px;text-transform:uppercase;">&#128247; Photos (' + INW_PHOTOS.length + ')</div>' +
+                '<div style="display:flex;flex-wrap:wrap;gap:6px;">' +
+                    INW_PHOTOS.map(function(p) { return '<img src="' + p.dataUrl + '" style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1.5px solid #e2e8f0;">'; }).join('') +
+                '</div></div>' : '');
         }
 
         // ── Build Outward summary (reads form directly, no PDF generation) ──
@@ -6198,7 +6551,12 @@
                     '<th style="padding:6px;text-align:left;width:20%;">Make / Category</th>' +
                     '<th style="padding:6px;width:21%;">Qty</th><th style="padding:6px;width:22%;">Weight</th>' +
                 '</tr></thead><tbody>' + rows + '</tbody></table>' +
-            (itemRows.length > 1 ? '<div style="margin-top:8px;padding:6px 10px;border-left:3px solid #f59e0b;background:#fffbeb;font-size:11px;color:#92400e;">&#9888; Note: Outward sheet stores only the <strong>first item</strong>. Other ' + (itemRows.length - 1) + ' item(s) will appear in PDF but not in the sheet.</div>' : '');
+            (itemRows.length > 1 ? '<div style="margin-top:8px;padding:6px 10px;border-left:3px solid #f59e0b;background:#fffbeb;font-size:11px;color:#92400e;">&#9888; Note: Outward sheet stores only the <strong>first item</strong>. Other ' + (itemRows.length - 1) + ' item(s) will appear in PDF but not in the sheet.</div>' : '') +
+            (OUT_PHOTOS.length > 0 ?
+                '<div style="margin-top:14px;"><div style="font-size:11px;font-weight:700;color:#0f172a;margin-bottom:6px;text-transform:uppercase;">&#128247; Photos (' + OUT_PHOTOS.length + ')</div>' +
+                '<div style="display:flex;flex-wrap:wrap;gap:6px;">' +
+                    OUT_PHOTOS.map(function(p) { return '<img src="' + p.dataUrl + '" style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1.5px solid #e2e8f0;">'; }).join('') +
+                '</div></div>' : '');
         }
 
         // =====================================================================
