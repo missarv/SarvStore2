@@ -1279,7 +1279,7 @@
 
                 <div class="grid-4" style="margin-bottom:10px;">
                     <div class="form-group">
-                        <label>Gate Pass Against</label>
+                        <label>Gate Pass Against <span id="gatePassMandatoryBadge" style="display:none;color:#dc2626;font-weight:700;font-size:10px;">★ MANDATORY</span></label>
                         <input type="text" class="form-control" id="gatePassNo" placeholder="Gate Pass No." list="dl-gatePassNo" autocomplete="off">
                     </div>
                     <div class="form-group">
@@ -1290,6 +1290,32 @@
                         <label>Machine Name</label>
                         <input type="text" class="form-control" id="inwMachineName" placeholder="Machine / Line No." list="dl-inw-machine-name" autocomplete="off">
                     </div>
+                    <div class="form-group">
+                        <label>Nature of Inward</label>
+                        <select class="form-control" id="inwNatureOfInward">
+                            <option value="Purchase">Purchase</option>
+                            <option value="Repaired">Repaired</option>
+                            <option value="Transfer">Transfer</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- ── Repair Return Outward Selector (shown when Nature = Repaired) ── -->
+                <div id="repairOutwardGroup" style="display:none; margin-bottom:12px; background:#fffbeb; border:2px solid #f59e0b; border-radius:8px; padding:12px 16px;">
+                    <div style="font-size:11px; font-weight:800; color:#92400e; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                        <span style="font-size:15px;">&#128295;</span>
+                        REPAIR RETURN &nbsp;— Select the Outward entry for which material is being received back
+                    </div>
+                    <div style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
+                        <div class="form-group" style="flex:2; min-width:220px; margin-bottom:0;">
+                            <label style="font-size:10px; font-weight:700; color:#92400e;">Pending Repair Outward <span style="color:#dc2626;">&#9733; Required</span></label>
+                            <select class="form-control" id="repairOutwardSelect" style="border:2px solid #f59e0b; background:#fffde7;">
+                                <option value="">— Select Outward No. (Repair) —</option>
+                            </select>
+                        </div>
+                        <div style="font-size:10px; color:#64748b; padding-bottom:8px; flex:1;" id="repairAutoFillStatus"></div>
+                    </div>
+                    <div style="font-size:9px; color:#78350f; margin-top:6px;">&#9432; On selecting an Outward No., the Supplier, Items and Lot No. will be auto-filled from the outward record.</div>
                 </div>
 
                 <div class="section-header-row">
@@ -1587,18 +1613,20 @@
                     <table id="searchResultsTable">
                         <thead>
                             <tr>
-                                <th style="width:6%;">Type</th>
-                                <th style="width:16%;">Record No.</th>
-                                <th style="width:12%;">Invoice No.</th>
-                                <th style="width:9%;">Date</th>
-                                <th style="width:17%;">Party / Supplier</th>
-                                <th style="width:9%;">Amount</th>
-                                <th style="width:31%; text-align:center;">Actions</th>
+                                <th style="width:5%;">Type</th>
+                                <th style="width:13%;">Record No.</th>
+                                <th style="width:10%;">Invoice No.</th>
+                                <th style="width:8%;">Date</th>
+                                <th style="width:12%;">Party / Supplier</th>
+                                <th style="width:11%;">Receiver Name</th>
+                                <th style="width:7%;">Amount</th>
+                                <th style="width:8%;">Total Qty</th>
+                                <th style="width:26%; text-align:center;">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="searchResultsBody">
                             <tr>
-                                <td colspan="7" style="text-align:center; padding:30px; color:#94a3b8;">
+                                <td colspan="9" style="text-align:center; padding:30px; color:#94a3b8;">
                                     &#9203; Loading all records...
                                 </td>
                             </tr>
@@ -2206,7 +2234,7 @@
         // =====================================================================
         // CLOUD SYNC CONFIG  --  paste your deployed Apps Script Web App URL
         // =====================================================================
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwupe5y7CyxAdeBR-ejczl5wpRgsCr27x1oZj1yeRv_py7xyvU3l5ypI4cTGlw_i0k8/exec";
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxHpNStfefYdmpHOkVOii3j_veNEsrEPfYz3mEXEiu3ybP3QvYBf6uVUX_dYN0gNQMU/exec";
         // =====================================================================
 
         // Two independent counters — one per Entry Type
@@ -2330,6 +2358,16 @@
             CURRENT_SUBMIT_CONTEXT = "INWARD";
 
             const submitBtnEl = this;
+
+            // ── Repaired: Gate Pass Against is mandatory ──
+            if ((document.getElementById('inwNatureOfInward').value || '') === 'Repaired') {
+                const _gp = (document.getElementById('gatePassNo').value || '').trim();
+                if (!_gp) {
+                    showToast('⚠️ Gate Pass Against is mandatory for Repaired entries — please select a Repair Outward No.', 'warn', 6000);
+                    document.getElementById('gatePassNo').focus();
+                    return;
+                }
+            }
 
             // ── Duplicate Inward No. pre-check (before signature flow) ──
             const inwardNoVal = (document.getElementById('regEntryNo')?.value || '').trim();
@@ -2823,6 +2861,7 @@
                 gatePass:      (document.getElementById('gatePassNo').value || '').trim(),
                 lotNo:         (document.getElementById('lotNo').value || '').trim(),
                 machineName:   (document.getElementById('inwMachineName').value || '').trim(),
+                natureOfInward: (document.getElementById('inwNatureOfInward').value || '').trim(),
                 state:         document.getElementById('partyState').value,
                 poNum:         (document.getElementById('poNumber').value || '').trim(),
                 invoiceNum:    (document.getElementById('invoiceNumber').value || '').trim(),
@@ -3191,9 +3230,15 @@
             entryType = entryType || document.getElementById('outEntryTypeSelect').value;
             const isReceiver = (copyTitle === 'RECEIVER COPY');
 
+            const _outAutoTs = (() => {
+                const d = new Date(), mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                return ('0'+d.getDate()).slice(-2)+'-'+mo[d.getMonth()]+'-'+d.getFullYear()+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+            })();
+
             let digitalStampHtml = `
                 <div class="sig-blank-space"></div>
                 <div class="sig-line">Store In-Charge</div>
+                <div class="sig-timestamp">${_outAutoTs}</div>
             `;
             if (IS_DIGITALLY_SIGNED && SIGNATURE_IMAGE_DATA) {
                 digitalStampHtml = `
@@ -3723,9 +3768,15 @@
             const _sigName  = (CURRENT_SIGNATORY_OBJ && CURRENT_SIGNATORY_OBJ.name)
                 ? CURRENT_SIGNATORY_OBJ.name : 'Store In-Charge';
 
+            const _autoTs = (() => {
+                const d = new Date(), mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                return ('0'+d.getDate()).slice(-2)+'-'+mo[d.getMonth()]+'-'+d.getFullYear()+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+            })();
+
             let digitalStampHtml = `
                 <div class="sig-blank-space"></div>
                 <div class="sig-line">Store In-Charge</div>
+                <div class="sig-timestamp">${_autoTs}</div>
             `;
             if(IS_DIGITALLY_SIGNED && SIGNATURE_IMAGE_DATA) {
                 digitalStampHtml = `
@@ -3760,6 +3811,7 @@
                                 <tr><td class="lbl">PO Reference:</td><td>${poNum}</td></tr>
                                 ${gatePass ? `<tr><td class="lbl">Gate Pass:</td><td>${gatePass}</td></tr>` : ''}
                                 ${lotNumber ? `<tr><td class="lbl">Lot No.:</td><td>${lotNumber}</td></tr>` : ''}
+                                ${document.getElementById('inwNatureOfInward') && document.getElementById('inwNatureOfInward').value ? `<tr><td class="lbl">Nature of Inward:</td><td><strong>${document.getElementById('inwNatureOfInward').value}</strong></td></tr>` : ''}
                             </table>
                         </div>
                     </div>
@@ -4355,6 +4407,19 @@
             ['poNumber','invoiceNumber','supplierName','inwRemarks','gatePassNo','lotNo','inwMachineName'].forEach(id => {
                 const el = document.getElementById(id); if (el) el.value = '';
             });
+            // Reset Nature of Inward to default + hide repair group
+            const _nowEl = document.getElementById('inwNatureOfInward');
+            if (_nowEl) _nowEl.value = 'Purchase';
+            const _rg = document.getElementById('repairOutwardGroup');
+            if (_rg) _rg.style.display = 'none';
+            const _rs = document.getElementById('repairOutwardSelect');
+            if (_rs) _rs.innerHTML = '<option value="">— Select Outward No. (Repair) —</option>';
+            const _rafStatus = document.getElementById('repairAutoFillStatus');
+            if (_rafStatus) _rafStatus.innerHTML = '';
+            const _gpe = document.getElementById('gatePassNo');
+            if (_gpe) { _gpe.style.border = ''; _gpe.style.background = ''; }
+            const _badge = document.getElementById('gatePassMandatoryBadge');
+            if (_badge) _badge.style.display = 'none';
             // Reset dates to today
             document.getElementById('receivingDate').valueAsDate = new Date();
             document.getElementById('invoiceDate').valueAsDate   = new Date();
@@ -4434,13 +4499,16 @@
                     ? '<a href="' + r.pdfLink2 + '" target="_blank" rel="noopener" class="btn" style="height:24px;padding:2px 7px;font-size:9px;text-decoration:none;display:inline-flex;align-items:center;gap:2px;background:#e0e7ff;color:#4338ca;border:1px solid #c7d2fe;" title="Two Page PDF">&#128203; 2P</a>'
                     : '';
                 const editIcon = EDIT_TOKEN && Date.now() < EDIT_TOKEN_EXPIRY ? '&#128275;' : '&#128272;';
+                const tQty = (typeof r.totalQty === 'number' && r.totalQty > 0) ? r.totalQty.toLocaleString('en-IN') : (r.totalQty > 0 ? r.totalQty : '—');
                 return '<tr>' +
                     '<td style="padding:5px 6px;">' + typeBadge + '</td>' +
                     '<td style="font-weight:700;font-size:10px;padding:5px 6px;">' + esc(r.recordNo) + '</td>' +
                     '<td style="font-size:10px;padding:5px 6px;">' + esc(r.invoiceNo || '—') + '</td>' +
                     '<td style="font-size:10px;padding:5px 6px;white-space:nowrap;">' + esc(r.date || '—') + '</td>' +
-                    '<td style="font-size:10px;padding:5px 6px;">' + esc(r.party || r.receiver || '—') + '</td>' +
+                    '<td style="font-size:10px;padding:5px 6px;">' + esc(r.party || '—') + '</td>' +
+                    '<td style="font-size:10px;padding:5px 6px;color:#0369a1;font-weight:600;">' + esc(r.receiver || '—') + '</td>' +
                     '<td style="font-weight:700;text-align:right;font-size:10px;padding:5px 6px;">' + amount + '</td>' +
+                    '<td style="text-align:right;font-size:10px;padding:5px 6px;font-weight:600;color:#047857;">' + tQty + '</td>' +
                     '<td style="text-align:center;padding:4px 6px;">' +
                         '<div style="display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap;justify-content:center;">' +
                             pdfBtn + pdf2Btn +
@@ -4493,7 +4561,7 @@
             }
 
             setSearchStatus('&#9203; Loading all records...');
-            bodyEl.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:#94a3b8;">&#9203; Fetching all entries from Google Sheet...</td></tr>';
+            bodyEl.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:24px;color:#94a3b8;">&#9203; Fetching all entries from Google Sheet...</td></tr>';
 
             try {
                 let url = APPS_SCRIPT_URL + '?action=getAllRecords&type=' + encodeURIComponent(sheetFilter);
@@ -4501,11 +4569,15 @@
                 if (dateTo)   url += '&dateTo='   + encodeURIComponent(dateTo);
 
                 const res  = await fetch(url, { method: 'GET', redirect: 'follow' });
-                const data = await res.json();
+                const _rawText = await res.text();
+                if (_rawText.trim().startsWith('<')) {
+                    throw new Error('Apps Script returned HTML instead of JSON. Redeploy the web app as \'Execute as: Me\' and \'Who has access: Anyone\'.');
+                }
+                const data = JSON.parse(_rawText);
 
                 if (data.status !== 'OK') {
                     setSearchStatus('&#10060; Error: ' + (data.message || 'unknown'));
-                    bodyEl.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#ef4444;">' + esc(data.message || 'Error') + '</td></tr>';
+                    bodyEl.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#ef4444;">' + esc(data.message || 'Error') + '</td></tr>';
                     return;
                 }
 
@@ -4516,7 +4588,7 @@
                 if (results.length === 0) {
                     const rangeMsg = (dateFrom || dateTo) ? ' for selected date range' : '';
                     setSearchStatus('&#8505;&#65039; No records found' + rangeMsg);
-                    bodyEl.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:#94a3b8;">No records found' + esc(rangeMsg) + '.</td></tr>';
+                    bodyEl.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:#94a3b8;">No records found' + esc(rangeMsg) + '.</td></tr>';
                     return;
                 }
 
@@ -4528,7 +4600,7 @@
 
             } catch (err) {
                 setSearchStatus('&#10060; Network error: ' + err.message);
-                bodyEl.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#ef4444;">' + esc(err.message) + '</td></tr>';
+                bodyEl.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#ef4444;">' + esc(err.message) + '</td></tr>';
             }
         }
 
@@ -4549,15 +4621,19 @@
             }
 
             setSearchStatus('&#9203; Searching...');
-            bodyEl.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#94a3b8;">Searching...</td></tr>';
+            bodyEl.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#94a3b8;">Searching...</td></tr>';
 
             try {
                 const res  = await fetch(APPS_SCRIPT_URL + '?action=search&q=' + encodeURIComponent(q), { method: 'GET', redirect: 'follow' });
-                const data = await res.json();
+                const _srText = await res.text();
+                if (_srText.trim().startsWith('<')) {
+                    throw new Error('Apps Script returned HTML instead of JSON. Redeploy the web app as \'Execute as: Me\' and \'Who has access: Anyone\'.');
+                }
+                const data = JSON.parse(_srText);
 
                 if (data.status !== 'OK') {
                     setSearchStatus('&#10060; Error: ' + (data.message || 'unknown'));
-                    bodyEl.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#ef4444;">' + esc(data.message || 'Error') + '</td></tr>';
+                    bodyEl.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#ef4444;">' + esc(data.message || 'Error') + '</td></tr>';
                     return;
                 }
 
@@ -4580,7 +4656,7 @@
 
                 if (results.length === 0) {
                     setSearchStatus('&#8505;&#65039; No records matching "' + esc(q) + '"');
-                    bodyEl.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:#94a3b8;">No matches found for "' + esc(q) + '".</td></tr>';
+                    bodyEl.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:#94a3b8;">No matches found for "' + esc(q) + '".</td></tr>';
                     return;
                 }
 
@@ -4590,7 +4666,7 @@
 
             } catch (err) {
                 setSearchStatus('&#10060; Network error: ' + err.message);
-                bodyEl.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#ef4444;">' + esc(err.message) + '</td></tr>';
+                bodyEl.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#ef4444;">' + esc(err.message) + '</td></tr>';
             }
         }
 
@@ -4959,6 +5035,7 @@
                 editFG('Invoice Number',ipt('invoiceNum',   r.invoiceNum)) +
                 editFG('Invoice Date',  ipt('invoiceDate',  r.invoiceDate, 'date')) +
                 editFG('GST %',         sel('gstRate',      r.gstRate, ['0','5','12','18','28'])) +
+                editFG('Nature of Inward', sel('natureOfInward', r.natureOfInward || 'Purchase', ['Purchase','Repaired','Transfer'])) +
             '</div>' +
             '<div style="font-weight:800;font-size:11px;text-transform:uppercase;color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:6px;margin-bottom:10px;">💰 Billing Fields</div>' +
             '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px;">' +
@@ -5290,6 +5367,139 @@
                 body.innerHTML = '<div style="color:#ef4444;padding:20px;text-align:center;">❌ Network error: ' + err.message + '</div>';
             }
         }
+
+
+        // =====================================================================
+        // REPAIR INWARD WORKFLOW
+        // =====================================================================
+
+        document.getElementById('inwNatureOfInward').addEventListener('change', handleNatureOfInwardChange);
+
+        async function handleNatureOfInwardChange() {
+            const nature      = document.getElementById('inwNatureOfInward').value;
+            const repairGroup = document.getElementById('repairOutwardGroup');
+            const gatePassEl  = document.getElementById('gatePassNo');
+            const badge       = document.getElementById('gatePassMandatoryBadge');
+
+            if (nature === 'Repaired') {
+                repairGroup.style.display = '';
+                gatePassEl.style.border   = '2px solid #dc2626';
+                gatePassEl.style.background = '#fff1f1';
+                if (badge) badge.style.display = 'inline';
+                await loadRepairOutwards();
+            } else {
+                repairGroup.style.display   = 'none';
+                gatePassEl.style.border     = '';
+                gatePassEl.style.background = '';
+                if (badge) badge.style.display = 'none';
+                document.getElementById('repairOutwardSelect').innerHTML = '<option value="">— Select Outward No. (Repair) —</option>';
+                document.getElementById('repairAutoFillStatus').innerHTML = '';
+            }
+        }
+
+        async function loadRepairOutwards() {
+            const sel    = document.getElementById('repairOutwardSelect');
+            const status = document.getElementById('repairAutoFillStatus');
+
+            if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('script.google.com') === -1) {
+                sel.innerHTML = '<option value="">⚠ Apps Script URL not set</option>';
+                return;
+            }
+
+            sel.innerHTML = '<option value="">⏳ Loading repair entries...</option>';
+            status.innerHTML = '';
+
+            try {
+                const res      = await fetch(APPS_SCRIPT_URL + '?action=getRepairOutwards', { method: 'GET', redirect: 'follow' });
+                const rawText  = await res.text();
+                if (rawText.trim().startsWith('<')) throw new Error('Apps Script returned HTML — check deployment settings.');
+                const data = JSON.parse(rawText);
+
+                if (data.status !== 'OK') throw new Error(data.message || 'Unknown error');
+
+                const list = data.outwards || [];
+                if (list.length === 0) {
+                    sel.innerHTML = '<option value="">— No pending repair outwards found —</option>';
+                    status.innerHTML = '<span style="color:#f59e0b;">⚠ No pending repair entries.</span>';
+                    return;
+                }
+
+                sel.innerHTML = '<option value="">— Select Outward No. (Repair) —</option>';
+                list.forEach(function(o) {
+                    const label = o.outwardNo + ' | ' + (o.partyName || '—') + ' | ' + (o.date || '');
+                    const opt   = document.createElement('option');
+                    opt.value       = o.outwardNo;
+                    opt.textContent = label;
+                    opt.setAttribute('data-json', JSON.stringify(o));
+                    sel.appendChild(opt);
+                });
+                status.innerHTML = '<span style="color:#16a34a;">✔ ' + list.length + ' pending repair outward(s) found</span>';
+            } catch (err) {
+                sel.innerHTML = '<option value="">⚠ Error loading — ' + esc(err.message) + '</option>';
+                status.innerHTML = '<span style="color:#ef4444;">✘ ' + esc(err.message) + '</span>';
+            }
+        }
+
+        document.getElementById('repairOutwardSelect').addEventListener('change', async function() {
+            const outwardNo = this.value;
+            const status    = document.getElementById('repairAutoFillStatus');
+
+            if (!outwardNo) return;
+
+            // Set Gate Pass Against
+            document.getElementById('gatePassNo').value = outwardNo;
+
+            status.innerHTML = '⏳ Fetching outward details for auto-fill...';
+
+            try {
+                const res     = await fetch(APPS_SCRIPT_URL + '?action=getRecordDetail&recordNo=' + encodeURIComponent(outwardNo) + '&type=OUTWARD', { method: 'GET', redirect: 'follow' });
+                const rawText = await res.text();
+                if (rawText.trim().startsWith('<')) throw new Error('Apps Script returned HTML.');
+                const data    = JSON.parse(rawText);
+
+                if (data.status !== 'OK') throw new Error(data.message || 'Error fetching outward record');
+
+                const r = data.record;
+
+                // ── Auto-fill header fields ──
+                if (r.partyName) document.getElementById('supplierName').value = r.partyName;
+                if (r.lotNo)     document.getElementById('lotNo').value         = r.lotNo;
+                if (r.items && r.items.length > 0 && r.items[0].machineName)
+                    document.getElementById('inwMachineName').value = r.items[0].machineName;
+
+                // ── Auto-fill items table ──
+                const items = r.items || [];
+                if (items.length > 0) {
+                    document.getElementById('itemTableBody').innerHTML = '';
+                    items.forEach(function(it) {
+                        addNewRow();
+                        const lastRow = document.querySelector('#itemTableBody tr:last-child');
+                        if (!lastRow) return;
+                        lastRow.querySelector('.item-name').value   = it.itemName   || '';
+                        lastRow.querySelector('.item-desc').value   = it.itemDesc   || '';
+                        lastRow.querySelector('.item-make').value   = it.make       || '';
+                        lastRow.querySelector('.item-cat').value    = it.category   || '';
+                        lastRow.querySelector('.qty-field').value   = it.qty        || 0;
+                        lastRow.querySelector('.item-uom').value    = it.qtyUom     || 'PCS';
+                        lastRow.querySelector('.weight-field').value = it.weight    || 0;
+                        // Set weight unit
+                        const wunitSel = lastRow.querySelector('.item-wunit');
+                        if (wunitSel && it.wUnit) {
+                            const opt = Array.from(wunitSel.options).find(o => o.value === it.wUnit);
+                            if (opt) wunitSel.value = it.wUnit;
+                        }
+                        calculateRowTotal(lastRow);
+                    });
+                    calculateGrandTotal();
+                }
+
+                status.innerHTML = '<span style="color:#16a34a;">✔ Auto-filled from Outward No. ' + esc(outwardNo) + ' (' + esc(r.partyName || '') + '). Verify & complete pricing before saving.</span>';
+
+            } catch (err) {
+                status.innerHTML = '<span style="color:#ef4444;">✘ Auto-fill failed: ' + esc(err.message) + '</span>';
+                document.getElementById('gatePassNo').value = outwardNo;
+            }
+        });
 
         // ── Wire all Reports panel controls ──
         document.getElementById('searchBtn').addEventListener('click', runRecordSearch);
@@ -6462,7 +6672,8 @@
                     ['Party State', esc(document.getElementById('partyState').value)],
                     ['Gate Pass', esc(gatePass) || '<span style="color:#94a3b8">—</span>'],
                     ['Lot No.', esc(lotNumber) || '<span style="color:#94a3b8">—</span>'],
-                    ['Machine', esc(machineName) || '<span style="color:#94a3b8">—</span>']
+                    ['Machine', esc(machineName) || '<span style="color:#94a3b8">—</span>'],
+                    ['Nature of Inward', esc((document.getElementById('inwNatureOfInward') && document.getElementById('inwNatureOfInward').value) || 'Purchase')]
                 ]) +
                 buildInfoBox('&#129534; Invoice Details', [
                     ['Invoice Number', esc(document.getElementById('invoiceNumber').value) || '<span style="color:#94a3b8">—</span>'],
@@ -6731,7 +6942,11 @@
                 if (dateTo)   url += '&dateTo='   + encodeURIComponent(dateTo);
 
                 const res  = await fetch(url, { method: 'GET', redirect: 'follow' });
-                const data = await res.json();
+                const _rawText = await res.text();
+                if (_rawText.trim().startsWith('<')) {
+                    throw new Error('Apps Script returned HTML instead of JSON. Redeploy the web app as \'Execute as: Me\' and \'Who has access: Anyone\'.');
+                }
+                const data = JSON.parse(_rawText);
 
                 if (data.status !== 'OK') {
                     showToast('&#10060; Data fetch error: ' + (data.message || 'unknown'), 'error', 6000);
