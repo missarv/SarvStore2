@@ -6793,7 +6793,7 @@
             if (!dlInward) return;
 
             let nameOpts = '', descOpts = '', makeOpts = '', catOpts = '', uomOpts = '';
-            const seenNames = {}, seenDescs = {}, seenMakes = {}, seenCats = {}, seenUoms = {};
+            const seenCompound = {}, seenDescs = {}, seenMakes = {}, seenCats = {}, seenUoms = {};
 
             // Default categories + UOMs (always available even with empty master)
             const defaultCats = ['YARN','FABRIC','PACKAGING','SPARES','CHEMICAL','CONSUMABLE','OTHER'];
@@ -6810,10 +6810,14 @@
                 const s = it.subCategory || '';
                 const u = it.uom         || '';
 
-                if (n && !seenNames[n]) {
-                    seenNames[n] = true;
-                    const label = n + (d ? ' — ' + d : '') + (c ? ' [' + c + ']' : '');
-                    nameOpts += '<option value="' + n.replace(/"/g,'&quot;') + '" label="' + label.replace(/"/g,'&quot;') + '">';
+                // ── v7: Show every unique NAME ▸ DESC combo in dropdown ──
+                const compoundId = (n + '||' + d).toUpperCase();
+                if (n && !seenCompound[compoundId]) {
+                    seenCompound[compoundId] = true;
+                    // value = "NAME ▸ DESC" so each combo is selectable
+                    const dropVal = d ? n + ' \u25B8 ' + d : n;
+                    const label   = n + (d ? ' — ' + d : '') + (c ? ' [' + c + ']' : '');
+                    nameOpts += '<option value="' + dropVal.replace(/"/g,'&quot;') + '" label="' + label.replace(/"/g,'&quot;') + '">';
                 }
                 if (d && !seenDescs[d]) { seenDescs[d] = true; descOpts += '<option value="' + d.replace(/"/g,'&quot;') + '">'; }
                 if (m && !seenMakes[m]) { seenMakes[m] = true; makeOpts += '<option value="' + m.replace(/"/g,'&quot;') + '">'; }
@@ -6857,15 +6861,16 @@
         }
 
         // ── Auto-fill fields when item selected from dropdown ──
+        // v7: Supports compound "NAME ▸ DESC" datalist values for same-name items
         function setupItemAutoFill() {
-            // Inward + Outward item rows — when item-name changes, auto-fill desc/make/cat/rate
-            // Use 'input' event for <input> elements (fires on typing + datalist selection)
             let _itemFillDebounce = null;
+            let _skipAutoFill = false;
             document.addEventListener('input', function(e) {
+                if (_skipAutoFill) return;
                 if (!e.target.classList.contains('item-name') && !e.target.classList.contains('out-item-name')) return;
                 clearTimeout(_itemFillDebounce);
                 _itemFillDebounce = setTimeout(function() {
-                    const selectedName = e.target.value.trim().toUpperCase();
+                    const rawVal = e.target.value.trim();
                     const row = e.target.closest('tr');
                     if (!row) return;
 
@@ -6874,23 +6879,41 @@
                     const catEl  = row.querySelector('.item-cat')  || row.querySelector('.out-item-cat');
                     const rateEl = row.querySelector('.list-price-field');
 
-                    const match = MASTER_ITEMS.find(function(it) {
-                        return it.itemName.toUpperCase() === selectedName;
-                    });
+                    let match = null;
+
+                    // ── Check if compound "NAME ▸ DESC" was selected ──
+                    if (rawVal.includes(' \u25B8 ')) {
+                        var parts    = rawVal.split(' \u25B8 ');
+                        var namePart = parts[0].trim().toUpperCase();
+                        var descPart = parts.slice(1).join(' \u25B8 ').trim().toUpperCase();
+                        match = MASTER_ITEMS.find(function(it) {
+                            return it.itemName.toUpperCase() === namePart &&
+                                   (it.itemDesc || '').toUpperCase() === descPart;
+                        });
+                        // Clean input — show just the item name
+                        _skipAutoFill = true;
+                        e.target.value = namePart;
+                        _skipAutoFill = false;
+                    } else {
+                        // Plain name typed — match first item with this name
+                        var selectedName = rawVal.toUpperCase();
+                        match = MASTER_ITEMS.find(function(it) {
+                            return it.itemName.toUpperCase() === selectedName;
+                        });
+                    }
 
                     if (match) {
-                        // Always overwrite locked fields (desc + cat)
                         if (descEl) descEl.value = match.itemDesc || '';
-                        if (catEl)  catEl.value = match.category || '';
+                        if (catEl)  catEl.value  = match.category || '';
                         if (makeEl && !makeEl.value) makeEl.value = match.make || '';
                         if (rateEl && (!rateEl.value || rateEl.value === '0')) {
                             rateEl.value = match.rate || 0;
                             rateEl.dispatchEvent(new Event('input', { bubbles: true }));
                         }
-                    } else {
-                        // No match — clear locked fields
+                    } else if (!rawVal) {
+                        // Cleared — reset locked fields
                         if (descEl) descEl.value = '';
-                        if (catEl)  catEl.value = '';
+                        if (catEl)  catEl.value  = '';
                     }
                 }, 150);
             });
