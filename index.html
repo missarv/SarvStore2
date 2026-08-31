@@ -2400,7 +2400,7 @@
         // =====================================================================
         // CLOUD SYNC CONFIG  --  paste your deployed Apps Script Web App URL
         // =====================================================================
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz_yYkhNdDcjs1G5tjt3XYucww72uPRhB94WUCgUxlfaZVtEnkL53E8Ke__MTZBaB-H/exec";
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyZwmMX5Okspqd3WnesSbGp_qq8X6sJ4tb4qlmRXUP4Jf9KrJd2w-JEwAQ6IV1RgyiR/exec";
         // =====================================================================
 
         // Two independent counters — one per Entry Type
@@ -6903,20 +6903,42 @@
                     }
 
                     if (match) {
-                        if (descEl) descEl.value = match.itemDesc || '';
+                        // ── v7: Fill desc (editable) + cat (locked) ──
+                        if (descEl) { descEl.value = match.itemDesc || ''; descEl.disabled = false; }
                         if (catEl)  catEl.value  = match.category || '';
                         if (makeEl && !makeEl.value) makeEl.value = match.make || '';
                         if (rateEl && (!rateEl.value || rateEl.value === '0')) {
                             rateEl.value = match.rate || 0;
                             rateEl.dispatchEvent(new Event('input', { bubbles: true }));
                         }
-                    } else if (!rawVal) {
-                        // Cleared — reset locked fields
-                        if (descEl) descEl.value = '';
+                        e.target.style.borderColor = '';
+                    } else {
+                        // No match — disable desc, clear locked fields
+                        if (descEl) { descEl.value = ''; descEl.disabled = true; }
                         if (catEl)  catEl.value  = '';
                     }
                 }, 150);
             });
+
+            // ── v7: Blur validation — Item Name MUST exist in master list ──
+            document.addEventListener('blur', function(e) {
+                if (!e.target.classList.contains('item-name') && !e.target.classList.contains('out-item-name')) return;
+                var val = e.target.value.trim().toUpperCase();
+                if (!val) return; // empty is fine
+                var exists = MASTER_ITEMS.some(function(it) { return it.itemName.toUpperCase() === val; });
+                if (!exists) {
+                    e.target.value = '';
+                    e.target.style.borderColor = '';
+                    var row = e.target.closest('tr');
+                    if (row) {
+                        var descEl = row.querySelector('.item-desc') || row.querySelector('.out-item-desc');
+                        var catEl  = row.querySelector('.item-cat')  || row.querySelector('.out-item-cat');
+                        if (descEl) { descEl.value = ''; descEl.disabled = true; }
+                        if (catEl)  catEl.value = '';
+                    }
+                    showToast && showToast('⚠️ Item not found in Master — please select from list', 'error');
+                }
+            }, true);
 
             // Also listen on 'change' for datalist selection (some browsers fire change not input)
             document.addEventListener('change', function(e) {
