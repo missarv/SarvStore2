@@ -6878,6 +6878,7 @@
                     const makeEl = row.querySelector('.item-make') || row.querySelector('.out-item-make');
                     const catEl  = row.querySelector('.item-cat')  || row.querySelector('.out-item-cat');
                     const rateEl = row.querySelector('.list-price-field');
+                    const uomEl  = row.querySelector('.item-uom')  || row.querySelector('.out-qty-uom');
 
                     let match = null;
 
@@ -6903,9 +6904,10 @@
                     }
 
                     if (match) {
-                        // ── v7: Fill desc (editable) + cat (locked) ──
+                        // ── v7: Fill desc (editable) + cat (locked) + UOM ──
                         if (descEl) { descEl.value = match.itemDesc || ''; descEl.disabled = false; }
                         if (catEl)  catEl.value  = match.category || '';
+                        if (uomEl)  uomEl.value  = match.uom || 'PCS';
                         if (makeEl && !makeEl.value) makeEl.value = match.make || '';
                         if (rateEl && (!rateEl.value || rateEl.value === '0')) {
                             rateEl.value = match.rate || 0;
