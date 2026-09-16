@@ -6952,7 +6952,7 @@
 
                     if (match) {
                         // ── v7: Fill desc (editable) + cat (locked) + UOM ──
-                        if (descEl) { descEl.value = match.itemDesc || ''; descEl.disabled = false; }
+                        if (descEl) { descEl.value = match.itemDesc || '';}
                         if (catEl)  catEl.value  = match.category || '';
                         if (uomEl)  uomEl.value  = match.uom || 'PCS';
                         if (makeEl && !makeEl.value) makeEl.value = match.make || '';
